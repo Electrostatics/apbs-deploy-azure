@@ -17,16 +17,6 @@ resource "azurerm_storage_account" "storage" {
   account_replication_type = "LRS"
   account_kind             = "StorageV2"
 
-  blob_properties {
-    cors_rule {
-      allowed_headers    = ["*"]
-      allowed_methods    = ["GET", "POST", "PUT"]
-      allowed_origins    = ["*"]
-      exposed_headers    = ["*"]
-      max_age_in_seconds = 3600
-    }
-  }
-
   tags = {
     Name = var.name
   }
