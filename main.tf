@@ -12,7 +12,16 @@ terraform {
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    resource_group {
+      # This allows us to delete an entire resource group
+      # even if it contains resources not managed by terraform.
+      # This will be removed in the future.
+      prevent_deletion_if_contains_resources = false
+    }
+  }
+  # This makes it such that we don't have to have
+  # wait to have all of the resources enabled on the subscription
   resource_provider_registrations = "none"
 }
 
@@ -49,16 +58,16 @@ module "static_site" {
   gh_secret_prefix         = local.github_info.secret_prefix
 }
 
-# TODO: Need to move off of the free trial acount for to test this
-# module "cdn" {
-#   source                  = "./modules/apbs-web/cdn"
-#   primary_web_host        = module.bucket_and_role.primary_web_host
-#   resource_group_name     = azurerm_resource_group.github.name
-#   resource_group_location = azurerm_resource_group.github.location
-#   repository              = "omsf-eco-infra/apbs-web-testing-fork"
-#   principal_id            = module.bucket_and_role.oidc_principal_id
-# }
+module "cdn" {
+  source                  = "./modules/apbs-web/cdn"
+  name                    = "apbs"
+  primary_web_host        = module.static_site.primary_web_host
+  resource_group_name     = azurerm_resource_group.github.name
+  resource_group_location = azurerm_resource_group.github.location
+  repository              = local.github_info.repository
+  principal_id            = module.github_oidc.github_oidc_principal_id
+}
 
-# output "cdn_endpoint" {
-#   value = module.cdn.cdn_endpoint_url
-# }
+output "cdn_host_name" {
+  value = module.cdn.cdn_host_name
+}
