@@ -28,3 +28,15 @@ variable "gh_secret_prefix" {
   type        = string
   default     = "AZURE"
 }
+
+variable "name" {
+  description = "The name of the Azure FrontDoor Profile"
+  type        = string
+  default     = "static-site-cdn-profile"
+}
+
+variable "sku" {
+  description = "The SKU of the Azure FrontDoor Profile"
+  type        = string
+  default     = "Standard_AzureFrontDoor"
+}
