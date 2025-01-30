@@ -136,7 +136,3 @@ resource "azurerm_storage_management_policy" "inputs" {
 #   resource_group_id       = azurerm_resource_group.github.id
 #   plan_name               = "ingest-plan"
 # }
-
-output "cdn_host_name" {
-  value = module.cdn.cdn_host_name
-}
