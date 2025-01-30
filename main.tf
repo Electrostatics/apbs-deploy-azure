@@ -9,6 +9,13 @@ terraform {
       version = "~> 6.0"
     }
   }
+
+  backend "azurerm" {
+    resource_group_name  = "tf"
+    storage_account_name = "apbsterraform"
+    container_name       = "tfstate"
+    key                  = "terraform.tfstate"
+  }
 }
 
 provider "azurerm" {
@@ -32,6 +39,7 @@ locals {
     branch        = "aws-release"
     secret_prefix = "AZURE"
   }
+  blobs = ["inputs", "outputs"]
 }
 
 
@@ -67,6 +75,67 @@ module "cdn" {
   repository              = local.github_info.repository
   principal_id            = module.github_oidc.github_oidc_principal_id
 }
+
+module "backend_storage" {
+  source                  = "./modules/apbs-backend/storage-account"
+  name                    = "apbs-blobs"
+  resource_group_name     = azurerm_resource_group.github.name
+  resource_group_location = azurerm_resource_group.github.location
+}
+
+module "inputs_blob" {
+  source             = "./modules/apbs-backend/storage"
+  blob_name          = "inputs"
+  storage_account_id = module.backend_storage.storage_account.id
+}
+
+module "outputs_blob" {
+  source             = "./modules/apbs-backend/storage"
+  blob_name          = "outputs"
+  storage_account_id = module.backend_storage.storage_account.id
+}
+
+
+resource "azurerm_storage_management_policy" "inputs" {
+  storage_account_id = module.backend_storage.storage_account.id
+
+  rule {
+    name    = "inputs"
+    enabled = true
+    filters {
+      blob_types   = ["blockBlob"]
+      prefix_match = ["inputs/"]
+    }
+    actions {
+      base_blob {
+        # Put this into "cool" after 14 days
+        tier_to_cool_after_days_since_last_access_time_greater_than = 14
+        # Put this into "archive" after 30 days
+        tier_to_archive_after_days_since_last_access_time_greater_than = 30
+        # Delete after 60 days
+        delete_after_days_since_last_access_time_greater_than = 60
+      }
+    }
+  }
+}
+
+
+# module "blobs" {
+#   source                  = "./modules/apbs-backend/storage"
+#   blobs                   = ["inputs", "outputs"]
+#   name                    = "apbs-blobs"
+#   resource_group_name     = azurerm_resource_group.github.name
+#   resource_group_location = azurerm_resource_group.github.location
+# }
+
+# module "functions" {
+#   source                  = "./modules/apbs-backend/functions"
+#   name                    = "apbs-ingest"
+#   resource_group_name     = azurerm_resource_group.github.name
+#   resource_group_location = azurerm_resource_group.github.location
+#   resource_group_id       = azurerm_resource_group.github.id
+#   plan_name               = "ingest-plan"
+# }
 
 output "cdn_host_name" {
   value = module.cdn.cdn_host_name
