@@ -45,7 +45,7 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: OpenTofu apply
-        run: tofu apply -no-color
+        run: tofu apply -no-color -auto-approve
         env:
           ARM_USE_OIDC: true
           ARM_CLIENT_ID: ${{ secrets.TF_BACKEND_CLIENT_ID }}
