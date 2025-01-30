@@ -23,13 +23,13 @@ jobs:
 
       - uses: opentofu/setup-opentofu@v1
 
-      - name: OpenTofu validate
-        id: validate
-        run: tofu validate -no-color
-
       - name: OpenTofu init
         id: init
         run: tofu init
+
+      - name: OpenTofu validate
+        id: validate
+        run: tofu validate -no-color
 
       - name: OpenTofu plan
         run: tofu plan -no-color
