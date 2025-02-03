@@ -47,34 +47,16 @@ locals {
 }
 
 
-resource "azurerm_resource_group" "github" {
-  name     = "github"
+resource "azurerm_resource_group" "apbs-backend" {
+  name     = "apbs-backend"
   location = "East US"
-}
-
-module "github_oidc" {
-  source                  = "./modules/apbs-web/github_oidc"
-  resource_group_name     = azurerm_resource_group.github.name
-  resource_group_location = azurerm_resource_group.github.location
-  github_info             = local.github_info
-}
-
-# Module to create the static site in Azure
-module "static_site" {
-  source                   = "./modules/apbs-web/static_site"
-  name                     = "apbs-web-testing-deploy"
-  resource_group_location  = azurerm_resource_group.github.location
-  resource_group_name      = azurerm_resource_group.github.name
-  github_oidc_principal_id = module.github_oidc.github_oidc_principal_id
-  repository               = local.github_info.repository
-  gh_secret_prefix         = local.github_info.secret_prefix
 }
 
 module "backend_storage" {
   source                  = "./modules/apbs-backend/storage-account"
   name                    = "apbs-blobs"
-  resource_group_name     = azurerm_resource_group.github.name
-  resource_group_location = azurerm_resource_group.github.location
+  resource_group_name     = azurerm_resource_group.apbs-backend.name
+  resource_group_location = azurerm_resource_group.apbs-backend.location
 }
 
 module "inputs_blob" {
@@ -112,21 +94,3 @@ resource "azurerm_storage_management_policy" "inputs" {
     }
   }
 }
-
-
-# module "blobs" {
-#   source                  = "./modules/apbs-backend/storage"
-#   blobs                   = ["inputs", "outputs"]
-#   name                    = "apbs-blobs"
-#   resource_group_name     = azurerm_resource_group.github.name
-#   resource_group_location = azurerm_resource_group.github.location
-# }
-
-# module "functions" {
-#   source                  = "./modules/apbs-backend/functions"
-#   name                    = "apbs-ingest"
-#   resource_group_name     = azurerm_resource_group.github.name
-#   resource_group_location = azurerm_resource_group.github.location
-#   resource_group_id       = azurerm_resource_group.github.id
-#   plan_name               = "ingest-plan"
-# }
