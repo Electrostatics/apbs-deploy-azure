@@ -18,6 +18,10 @@ terraform {
   }
 }
 
+provider "github" {
+  owner = "omsf-eco-infra"
+}
+
 provider "azurerm" {
   features {
     resource_group {

@@ -10,7 +10,3 @@ terraform {
     }
   }
 }
-
-provider "github" {
-  owner = split("/", var.github_info.repository)[0]
-}
