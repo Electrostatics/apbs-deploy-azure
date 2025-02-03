@@ -18,6 +18,10 @@ terraform {
   }
 }
 
+provider "github" {
+  token = var.github_token
+}
+
 provider "azurerm" {
   features {
     resource_group {
