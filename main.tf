@@ -55,6 +55,17 @@ module "github_oidc" {
   github_info             = local.github_info
 }
 
+# Module to create the static site in Azure
+module "static_site" {
+  source                   = "./modules/apbs-web/static_site"
+  name                     = "apbs-web-testing-deploy"
+  resource_group_location  = azurerm_resource_group.github.location
+  resource_group_name      = azurerm_resource_group.github.name
+  github_oidc_principal_id = module.github_oidc.github_oidc_principal_id
+  repository               = local.github_info.repository
+  gh_secret_prefix         = local.github_info.secret_prefix
+}
+
 module "backend_storage" {
   source                  = "./modules/apbs-backend/storage-account"
   name                    = "apbs-blobs"
