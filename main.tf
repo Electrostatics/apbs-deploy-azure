@@ -94,3 +94,8 @@ resource "azurerm_storage_management_policy" "inputs" {
     }
   }
 }
+
+resource "azurerm_storage_queue" "apbs-backend-queue" {
+  name                 = "apbsbackendqueue"
+  storage_account_name = module.backend_storage.storage_account.name
+}
