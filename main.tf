@@ -18,6 +18,11 @@ terraform {
   }
 }
 
+variable "github_token" {
+  type        = string
+  description = "The token to use to authenticate with the GitHub API"
+}
+
 provider "github" {
   owner = "omsf-eco-infra"
   token = var.github_token
