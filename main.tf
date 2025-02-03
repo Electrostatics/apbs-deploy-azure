@@ -66,16 +66,6 @@ module "static_site" {
   gh_secret_prefix         = local.github_info.secret_prefix
 }
 
-module "cdn" {
-  source                  = "./modules/apbs-web/cdn"
-  name                    = "apbs"
-  primary_web_host        = module.static_site.primary_web_host
-  resource_group_name     = azurerm_resource_group.github.name
-  resource_group_location = azurerm_resource_group.github.location
-  repository              = local.github_info.repository
-  principal_id            = module.github_oidc.github_oidc_principal_id
-}
-
 module "backend_storage" {
   source                  = "./modules/apbs-backend/storage-account"
   name                    = "apbs-blobs"
