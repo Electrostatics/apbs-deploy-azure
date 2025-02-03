@@ -19,6 +19,7 @@ terraform {
 }
 
 provider "github" {
+  owner = "omsf-eco-infra"
   token = var.github_token
 }
 
