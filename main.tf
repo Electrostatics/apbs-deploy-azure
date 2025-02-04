@@ -69,6 +69,7 @@ module "outputs_blob" {
   source             = "./modules/apbs-backend/storage"
   blob_name          = "outputs"
   storage_account_id = module.backend_storage.storage_account.id
+  is_public          = true
 }
 
 
