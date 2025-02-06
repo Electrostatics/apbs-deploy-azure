@@ -46,6 +46,8 @@ locals {
   blobs = ["inputs", "outputs"]
 }
 
+data "azurerm_client_config" "current" {}
+
 
 resource "azurerm_resource_group" "apbs-backend" {
   name     = "apbs-backend"
@@ -99,4 +101,38 @@ resource "azurerm_storage_management_policy" "inputs" {
 resource "azurerm_storage_queue" "apbs-backend-queue" {
   name                 = "apbsbackendqueue"
   storage_account_name = module.backend_storage.storage_account.name
+}
+
+resource "azurerm_user_assigned_identity" "apbs-backend-queue-access" {
+  name                = "apbs-backend-queue-access"
+  location            = azurerm_resource_group.apbs-backend.location
+  resource_group_name = azurerm_resource_group.apbs-backend.name
+}
+
+resource "azurerm_role_definition" "apbs-backend-queue-restrictions" {
+  name = "APBS Backend Queue Access"
+  # Restrict this to the queue
+  scope = azurerm_storage_queue.apbs-backend-queue.resource_manager_id
+  permissions {
+    actions = [
+      "Microsoft.Storage/storageAccounts/queueServices/queues/read",
+      "Microsoft.Storage/storageAccounts/queueServices/queues/write",
+      "Microsoft.Storage/storageAccounts/queueServices/queues/delete",
+      "Microsoft.Storage/storageAccounts/listKeys/action"
+    ]
+    not_actions = []
+    data_actions = [
+      "Microsoft.Storage/storageAccounts/queueServices/queues/messages/read",
+      "Microsoft.Storage/storageAccounts/queueServices/queues/messages/write",
+      "Microsoft.Storage/storageAccounts/queueServices/queues/messages/delete",
+      "Microsoft.Storage/storageAccounts/queueServices/queues/messages/process/action"
+    ]
+    not_data_actions = []
+  }
+}
+
+resource "azurerm_role_assignment" "apbs-backend-queue-access" {
+  scope              = azurerm_storage_queue.apbs-backend-queue.resource_manager_id
+  role_definition_id = azurerm_role_definition.apbs-backend-queue-restrictions.role_definition_resource_id
+  principal_id       = azurerm_user_assigned_identity.apbs-backend-queue-access.principal_id
 }
