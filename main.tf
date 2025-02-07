@@ -136,3 +136,16 @@ resource "azurerm_role_assignment" "apbs-backend-queue-access" {
   role_definition_id = azurerm_role_definition.apbs-backend-queue-restrictions.role_definition_resource_id
   principal_id       = azurerm_user_assigned_identity.apbs-backend-queue-access.principal_id
 }
+
+
+resource "azurerm_user_assigned_identity" "apbs-output-blob-access" {
+  name                = "apbs-output-blob-access"
+  location            = azurerm_resource_group.apbs-backend.location
+  resource_group_name = azurerm_resource_group.apbs-backend.name
+}
+
+resource "azurerm_role_assignment" "apb-output-blob-access" {
+  scope                = module.outputs_blob.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_user_assigned_identity.apbs-output-blob-access.principal_id
+}
