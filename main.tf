@@ -74,6 +74,12 @@ module "outputs_blob" {
   is_public          = true
 }
 
+resource "github_actions_secret" "output_blob_storage_url" {
+  repository      = local.github_info.repository
+  secret_name     = "${local.github_info.secret_prefix}_OUTPUT_BLOB_STORAGE_URL"
+  plaintext_value = "https://${module.backend_storage.storage_account.name}.blob.core.windows.net/${module.outputs_blob.name}"
+}
+
 
 resource "azurerm_storage_management_policy" "inputs" {
   storage_account_id = module.backend_storage.storage_account.id
@@ -136,7 +142,6 @@ resource "azurerm_role_assignment" "apbs-backend-queue-access" {
   role_definition_id = azurerm_role_definition.apbs-backend-queue-restrictions.role_definition_resource_id
   principal_id       = azurerm_user_assigned_identity.apbs-backend-queue-access.principal_id
 }
-
 
 resource "azurerm_user_assigned_identity" "apbs-output-blob-access" {
   name                = "apbs-output-blob-access"

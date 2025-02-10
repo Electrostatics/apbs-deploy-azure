@@ -31,7 +31,7 @@ jobs:
           ARM_CLIENT_ID: ${{ secrets.TF_BACKEND_CLIENT_ID }}
           ARM_TENANT_ID: ${{ secrets.TF_BACKEND_TENANT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          TF_VAR_github_token: ${{ secrets.TF_VAR_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_VAR_GITHUB_TOKEN }}
 
       - name: OpenTofu validate
         id: validate
@@ -44,7 +44,7 @@ jobs:
           ARM_CLIENT_ID: ${{ secrets.TF_BACKEND_CLIENT_ID }}
           ARM_TENANT_ID: ${{ secrets.TF_BACKEND_TENANT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          TF_VAR_github_token: ${{ secrets.TF_VAR_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_VAR_GITHUB_TOKEN }}
 
       - name: OpenTofu apply
         run: tofu apply -no-color -auto-approve
