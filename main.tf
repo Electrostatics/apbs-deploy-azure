@@ -39,7 +39,7 @@ provider "azurerm" {
 
 locals {
   github_info = {
-    repository    = "omsf-eco-infra/apbs-web-testing-fork"
+    repository    = "apbs-web-testing-fork"
     branch        = "aws-release"
     secret_prefix = "AZURE"
   }
