@@ -1,0 +1,55 @@
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "4.14.0"
+    }
+    github = {
+      source  = "integrations/github"
+      version = "~> 6.0"
+    }
+  }
+
+  backend "azurerm" {
+    resource_group_name  = "tf"
+    storage_account_name = "apbsterraform"
+    container_name       = "tfstate"
+    key                  = "registry.tfstate"
+  }
+}
+
+provider "github" {
+  owner = "omsf-eco-infra"
+}
+
+provider "azurerm" {
+  features {
+    resource_group {
+      # This allows us to delete an entire resource group
+      # even if it contains resources not managed by terraform.
+      # This will be removed in the future.
+      prevent_deletion_if_contains_resources = false
+    }
+  }
+  # This makes it such that we don't have to have
+  # wait to have all of the resources enabled on the subscription
+  resource_provider_registrations = "none"
+}
+
+
+locals {}
+
+data "azurerm_client_config" "current" {}
+
+
+resource "azurerm_resource_group" "apbs-registry" {
+  name     = "apbs-registry"
+  location = "East US"
+}
+
+module "registry" {
+  source              = "../../modules/registry"
+  location            = azurerm_resource_group.apbs-registry.location
+  registry_name       = "apbsregistry"
+  resource_group_name = azurerm_resource_group.apbs-registry.name
+}

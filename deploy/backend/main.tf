@@ -55,20 +55,20 @@ resource "azurerm_resource_group" "apbs-backend" {
 }
 
 module "backend_storage" {
-  source                  = "./modules/apbs-backend/storage-account"
+  source                  = "../../modules/apbs-backend/storage-account"
   name                    = "apbs-blobs"
   resource_group_name     = azurerm_resource_group.apbs-backend.name
   resource_group_location = azurerm_resource_group.apbs-backend.location
 }
 
 module "inputs_blob" {
-  source             = "./modules/apbs-backend/storage"
+  source             = "../../modules/apbs-backend/storage"
   blob_name          = "inputs"
   storage_account_id = module.backend_storage.storage_account.id
 }
 
 module "outputs_blob" {
-  source             = "./modules/apbs-backend/storage"
+  source             = "../../modules/apbs-backend/storage"
   blob_name          = "outputs"
   storage_account_id = module.backend_storage.storage_account.id
   is_public          = true

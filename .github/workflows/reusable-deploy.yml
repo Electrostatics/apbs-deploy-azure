@@ -1,16 +1,17 @@
-name: Deploy to Azure
+name: Reusable Azure Deployment Workflow
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      working_directory:
+        required: true # The working directory to run the workflow in
+        type: string
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
+    defaults:
+      run:
+        working-directory: ${ inputs.working_directory }
     steps:
       - uses: actions/checkout@v4
 
