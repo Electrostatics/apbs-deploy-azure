@@ -37,7 +37,9 @@ provider "azurerm" {
 }
 
 
-locals {}
+locals {
+  registry_name = "apbsregistry${random_id.apbs-registry.hex}"
+}
 
 data "azurerm_client_config" "current" {}
 
@@ -57,6 +59,18 @@ resource "random_id" "apbs-registry" {
 module "registry" {
   source              = "../../modules/registry"
   location            = azurerm_resource_group.apbs-registry.location
-  registry_name       = "apbsregistry${random_id.apbs-registry.hex}"
+  registry_name       = local.registry_name
   resource_group_name = azurerm_resource_group.apbs-registry.name
+}
+
+resource "github_actions_secret" "acr_url" {
+  repository      = "apbs-deploy-azure"
+  secret_name     = "ACR_URL"
+  plaintext_value = module.registry.registry.login_server
+}
+
+resource "github_actions_secret" "acr_name" {
+  repository      = "apbs-deploy-azure"
+  secret_name     = "ACR_NAME"
+  plaintext_value = local.registry_name
 }
