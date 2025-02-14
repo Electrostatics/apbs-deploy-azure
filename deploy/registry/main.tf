@@ -47,9 +47,16 @@ resource "azurerm_resource_group" "apbs-registry" {
   location = "East US"
 }
 
+resource "random_id" "apbs-registry" {
+  keepers = {
+    resource_group_name = azurerm_resource_group.apbs-registry.name
+  }
+  byte_length = 4
+}
+
 module "registry" {
   source              = "../../modules/registry"
   location            = azurerm_resource_group.apbs-registry.location
-  registry_name       = "apbsregistry"
+  registry_name       = "apbsregistry${random_id.apbs-registry.hex}"
   resource_group_name = azurerm_resource_group.apbs-registry.name
 }
