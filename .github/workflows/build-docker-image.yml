@@ -28,12 +28,11 @@ jobs:
 
       - name: Build Image
         run: |
-          SHA=${{ github.sha }}
           docker build -t apbs-azure:latest container-apps/apbs
-          docker tag apbs-azure:latest ${{ secrets.ACR_URL }}/apbs-azure:$SHA
+          docker tag apbs-azure:latest ${{ secrets.ACR_URL }}/apbs-azure:${{ github.sha }}
           docker tag apbs-azure:latest ${{ secrets.ACR_URL }}/apbs-azure:latest
 
       - name: Push Image
         run: |
-          docker push ${{ secrets.ACR_URL }}/apbs-azure:$SHA
+          docker push ${{ secrets.ACR_URL }}/apbs-azure:${{ github.sha }}
           docker push ${{ secrets.ACR_URL }}/apbs-azure:latest
