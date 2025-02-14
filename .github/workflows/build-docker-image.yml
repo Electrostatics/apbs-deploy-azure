@@ -1,0 +1,39 @@
+name: Build and Push APBS Docker Image
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "container-apps/apbs/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Azure CLI
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to Azure Container Registry
+        run: az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Build Image
+        run: |
+          SHA=${{ github.sha }}
+          docker build -t apbs-azure:latest container-apps/apbs
+          docker tag apbs-azure:latest ${{ secrets.ACR_URL }}/apbs-azure:$SHA
+          docker tag apbs-azure:latest ${{ secrets.ACR_URL }}/apbs-azure:latest
+
+      - name: Push Image
+        run: |
+          docker push ${{ secrets.ACR_URL }}/apbs-azure:$SHA
+          docker push ${{ secrets.ACR_URL }}/apbs-azure:latest
