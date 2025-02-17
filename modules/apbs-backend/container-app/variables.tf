@@ -48,3 +48,15 @@ variable "image_tag" {
   description = "The tag of the container image"
   type        = string
 }
+
+variable "job_queue_name" {
+  description = "The job queue"
+  type        = string
+  sensitive   = true
+}
+
+variable "storage_primary_connection_string" {
+  description = "The primary connection string for the storage account"
+  type        = string
+  sensitive   = true
+}

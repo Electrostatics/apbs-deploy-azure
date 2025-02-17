@@ -61,6 +61,15 @@ resource "azurerm_container_app_job" "app" {
       image  = "${data.azurerm_container_registry.acr.login_server}/${var.image_name}:${var.image_tag}"
       cpu    = var.cpu
       memory = var.memory
+      env {
+        name  = "APBS_QUEUE_NAME"
+        value = var.job_queue_name
+      }
+      env {
+        # Swap this to a role instead
+        name  = "APBS_QUEUE_CONNECTION_STRING"
+        value = var.storage_primary_connection_string
+      }
     }
   }
 }

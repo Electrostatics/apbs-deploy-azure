@@ -168,14 +168,16 @@ resource "azurerm_role_assignment" "apb-output-blob-access" {
 }
 
 module "container-app" {
-  source                       = "../../modules/apbs-backend/container-app"
-  app_name                     = "apbs-app"
-  location                     = azurerm_resource_group.apbs-backend.location
-  backend_resource_group_name  = azurerm_resource_group.apbs-backend.name
-  cpu                          = 0.25
-  memory                       = "0.5Gi"
-  image_name                   = "apbs-azure"
-  image_tag                    = "latest"
-  registry_name                = var.acr_name
-  registry_resource_group_name = var.acr_resource_group_name
+  source                            = "../../modules/apbs-backend/container-app"
+  app_name                          = "apbs-app"
+  location                          = azurerm_resource_group.apbs-backend.location
+  backend_resource_group_name       = azurerm_resource_group.apbs-backend.name
+  cpu                               = 0.25
+  memory                            = "0.5Gi"
+  image_name                        = "apbs-azure"
+  image_tag                         = "latest"
+  registry_name                     = var.acr_name
+  registry_resource_group_name      = var.acr_resource_group_name
+  job_queue_name                    = resource.azurerm_storage_queue.apbs-backend-queue.name
+  storage_primary_connection_string = module.backend_storage.storage_account.primary_connection_string
 }
