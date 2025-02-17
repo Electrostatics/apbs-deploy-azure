@@ -609,7 +609,8 @@ def get_job_info(
     """
     job_info: dict
     try:
-        job_info = loads(job)
+        decoded = base64.b64decode(job).decode("utf-8")
+        job_info = loads(decoded)
         if "job_date" not in job_info:
             _LOGGER.error("ERROR: Missing job date for job, %s", job)
             job_info = {}
