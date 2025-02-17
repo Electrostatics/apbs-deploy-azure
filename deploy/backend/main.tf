@@ -46,6 +46,18 @@ locals {
   blobs = ["inputs", "outputs"]
 }
 
+variable "acr_name" {
+  description = "The Azure Container Registry name"
+  type        = string
+  sensitive   = true
+}
+
+variable "acr_resource_group_name" {
+  description = "The name of the resource group containing the Azure Container Registry"
+  type        = string
+  sensitive   = true
+}
+
 data "azurerm_client_config" "current" {}
 
 
@@ -153,4 +165,17 @@ resource "azurerm_role_assignment" "apb-output-blob-access" {
   scope                = module.outputs_blob.id
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = azurerm_user_assigned_identity.apbs-output-blob-access.principal_id
+}
+
+module "container-app" {
+  source                       = "../../modules/apbs-backend/container-app"
+  app_name                     = "apbs-app"
+  location                     = azurerm_resource_group.apbs-backend.location
+  backend_resource_group_name  = azurerm_resource_group.apbs-backend.name
+  cpu                          = 0.25
+  memory                       = "0.5Gi"
+  image_name                   = "apbs-azure"
+  image_tag                    = "latest"
+  registry_name                = var.acr_name
+  registry_resource_group_name = var.acr_resource_group_name
 }
