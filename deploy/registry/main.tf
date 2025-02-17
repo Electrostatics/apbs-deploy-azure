@@ -74,3 +74,9 @@ resource "github_actions_secret" "acr_name" {
   secret_name     = "ACR_NAME"
   plaintext_value = local.registry_name
 }
+
+resource "github_actions_secret" "acr_resource_group_name" {
+  repository      = "apbs-deploy-azure"
+  secret_name     = "ACR_RESOURCE_GROUP_NAME"
+  plaintext_value = azurerm_resource_group.apbs-registry.name
+}
