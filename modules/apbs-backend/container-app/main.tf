@@ -15,10 +15,20 @@ resource "azurerm_role_assignment" "container_app_role_assignment" {
   principal_id         = azurerm_user_assigned_identity.container_app_identity.principal_id
 }
 
-resource "azurerm_container_app_environment" "app_env" {
-  name                = "${var.app_name}-env"
+# Log Analytics Workspace
+resource "azurerm_log_analytics_workspace" "container_app_log_analytics" {
+  name                = "${var.app_name}-log-analytics"
   location            = var.location
   resource_group_name = var.backend_resource_group_name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+resource "azurerm_container_app_environment" "app_env" {
+  name                       = "${var.app_name}-env"
+  location                   = var.location
+  resource_group_name        = var.backend_resource_group_name
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.container_app_log_analytics.id
 }
 
 resource "azurerm_container_app_job" "app" {
