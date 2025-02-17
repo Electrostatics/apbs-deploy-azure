@@ -20,6 +20,7 @@ import sys
 import os
 import json
 import pathlib
+import base64
 # from boto3 import client, resource
 # from botocore.exceptions import ClientError, ParamValidationError
 
@@ -28,6 +29,7 @@ from azure.storage.blob import ContainerClient
 from azure.core.exceptions import ResourceNotFoundError
 
 from dataclasses import dataclass
+
 
 @dataclass
 class Settings:
@@ -48,10 +50,7 @@ GLOBAL_VARS = {
 }
 _LOGGER = getLogger(__name__)
 basicConfig(
-    format=(
-        "[%(levelname)s] "
-        "[%(filename)s:%(lineno)s:%(funcName)s()] %(message)s"
-    ),
+    format=("[%(levelname)s] [%(filename)s:%(lineno)s:%(funcName)s()] %(message)s"),
     # level=GLOBAL_VARS["LOG_LEVEL"],
     handlers=[StreamHandler(stderr)],
 )
@@ -80,8 +79,7 @@ class JOBSTATUS(Enum):
 
 
 class Storage:
-    """Wrapper around Azure Blob Storage.
-    """
+    """Wrapper around Azure Blob Storage."""
 
     def __init__(self, container_client: ContainerClient):
         self.container_client = container_client
@@ -107,8 +105,9 @@ class Storage:
         with open(filename, "wb") as data:
             data.write(self.get_contents(key))
 
-    def upload_file(self, filename: os.PathLike, prefix: os.PathLike,
-                    overwrite: bool = False):
+    def upload_file(
+        self, filename: os.PathLike, prefix: os.PathLike, overwrite: bool = False
+    ):
         blob = self.container_client.get_blob_client(f"{prefix}/{filename}")
         with open(filename, "rb") as data:
             return blob.upload_blob(data, overwrite=overwrite)
@@ -127,10 +126,15 @@ class Storage:
 
 
 class Queue:
-    """Wrapper around Azure Storage Queue.
-    """
-    def __init__(self, queue: QueueClient, max_tries: int,
-                 visibility_timeout: int, retry_time: int):
+    """Wrapper around Azure Storage Queue."""
+
+    def __init__(
+        self,
+        queue: QueueClient,
+        max_tries: int,
+        visibility_timeout: int,
+        retry_time: int,
+    ):
         self.queue = queue
         self.max_tries = max_tries
         self.visibility_timeout = visibility_timeout
@@ -148,15 +152,15 @@ class Queue:
         connection_string = getenv("APBS_QUEUE_CONNECTION_STRING")
         storage_queue_name = getenv("APBS_QUEUE_NAME")
         dct = {
-            'queue': QueueClient.from_connection_string(
+            "queue": QueueClient.from_connection_string(
                 connection_string, storage_queue_name
             ),
-            'max_tries': int(getenv("MAX_TRIES", "60")),
-            'retry_time': int(getenv("RETRY_TIME", "15")),
-            'visibility_timeout': int(getenv("Q_TIMEOUT", "300")),
+            "max_tries": int(getenv("MAX_TRIES", "60")),
+            "retry_time": int(getenv("RETRY_TIME", "15")),
+            "visibility_timeout": int(getenv("Q_TIMEOUT", "300")),
         }
-        dct['max_tries'] = 3  # TODO DEBUG TESTING
-        dct['retry_time'] = 1  # TODO DEBUG TESTING
+        dct["max_tries"] = 3  # TODO DEBUG TESTING
+        dct["retry_time"] = 1  # TODO DEBUG TESTING
         return dct
 
     @classmethod
@@ -167,12 +171,14 @@ class Queue:
         self.__dict__.update(self._kwargs_from_env())
 
     def extract_jobinfo(self, message):
+        content = message.content
+        decoded = base64.b64decode(content).decode("utf-8")
         try:
-            return json.loads(message.content)
+            return json.loads(decoded)
         except json.JSONDecodeError as error:
             _LOGGER.error(
                 "ERROR: Unable to load json information for job, %s \n\t%s",
-                message.content,
+                decoded,
                 error,
             )
             raise
@@ -184,9 +190,7 @@ class Queue:
         self.queue.update_message(message, visibility_timeout=timeout)
 
     def _get_single_message(self):
-        return self.queue.receive_message(
-            visibility_timeout=self.visibility_timeout
-        )
+        return self.queue.receive_message(visibility_timeout=self.visibility_timeout)
 
     def get_message(self):
         message = None
@@ -281,12 +285,8 @@ class JobMetrics:
         :rtype:  Dict
         """
         metrics = getrusage(RUSAGE_CHILDREN)
-        self.values["ru_utime"] = round(
-            metrics.ru_utime - self.values["ru_utime"], 2
-        )
-        self.values["ru_stime"] = round(
-            metrics.ru_stime - self.values["ru_stime"], 2
-        )
+        self.values["ru_utime"] = round(metrics.ru_utime - self.values["ru_utime"], 2)
+        self.values["ru_stime"] = round(metrics.ru_stime - self.values["ru_stime"], 2)
         self.values["ru_maxrss"] = metrics.ru_maxrss - self.values["ru_maxrss"]
         self.values["ru_ixrss"] = metrics.ru_ixrss - self.values["ru_ixrss"]
         self.values["ru_idrss"] = metrics.ru_idrss - self.values["ru_idrss"]
@@ -294,17 +294,11 @@ class JobMetrics:
         self.values["ru_minflt"] = metrics.ru_minflt - self.values["ru_minflt"]
         self.values["ru_majflt"] = metrics.ru_majflt - self.values["ru_majflt"]
         self.values["ru_nswap"] = metrics.ru_nswap - self.values["ru_nswap"]
-        self.values["ru_inblock"] = (
-            metrics.ru_inblock - self.values["ru_inblock"]
-        )
-        self.values["ru_oublock"] = (
-            metrics.ru_oublock - self.values["ru_oublock"]
-        )
+        self.values["ru_inblock"] = metrics.ru_inblock - self.values["ru_inblock"]
+        self.values["ru_oublock"] = metrics.ru_oublock - self.values["ru_oublock"]
         self.values["ru_msgsnd"] = metrics.ru_msgsnd - self.values["ru_msgsnd"]
         self.values["ru_msgrcv"] = metrics.ru_msgrcv - self.values["ru_msgrcv"]
-        self.values["ru_nsignals"] = (
-            metrics.ru_nsignals - self.values["ru_nsignals"]
-        )
+        self.values["ru_nsignals"] = metrics.ru_nsignals - self.values["ru_nsignals"]
         self.values["ru_nvcsw"] = metrics.ru_nvcsw - self.values["ru_nvcsw"]
         self.values["ru_nivcsw"] = metrics.ru_nivcsw - self.values["ru_nivcsw"]
         return self.values
@@ -316,9 +310,7 @@ class JobMetrics:
             int: The total bytes in all the files in the job directory
         """
         return sum(
-            f.stat().st_size
-            for f in self.output_dir.glob("**/*")
-            if f.is_file()
+            f.stat().st_size for f in self.output_dir.glob("**/*") if f.is_file()
         )
 
     @property
@@ -419,9 +411,7 @@ def signal_help(signal_number, frame):
         f"\tTo update environment variables, type: kill -USR1 {getpid()}\n\n",
         file=stderr,
     )
-    print(
-        f"\tTo toggle processing, type: kill -USR2 {getpid()}\n\n", file=stderr
-    )
+    print(f"\tTo toggle processing, type: kill -USR2 {getpid()}\n\n", file=stderr)
     print_current_state()
 
 
@@ -460,9 +450,9 @@ def update_environment(signal_number, frame):
     # _LOGGER.setLevel(GLOBAL_VARS["LOG_LEVEL"])
 
     # if GLOBAL_VARS["S3_TOPLEVEL_BUCKET"] is None:
-        # raise ValueError("Environment variable 'OUTPUT_BUCKET' is not set")
+    # raise ValueError("Environment variable 'OUTPUT_BUCKET' is not set")
     # if GLOBAL_VARS["QUEUE"] is None:
-        # raise ValueError("Environment variable 'JOB_QUEUE_NAME' is not set")
+    # raise ValueError("Environment variable 'JOB_QUEUE_NAME' is not set")
 
 
 def get_messages(sqs, qurl: str) -> Any:
@@ -628,9 +618,7 @@ def get_job_info(
             job_info = {}
     except JSONDecodeError as error:
         _LOGGER.error(
-            "ERROR: Unable to load json information for job, %s \n\t%s",
-            job,
-            error
+            "ERROR: Unable to load json information for job, %s \n\t%s", job, error
         )
         job_info = {}
     return job_info
@@ -769,12 +757,9 @@ def run_job(
     for file in listdir("."):
         try:
             file_path = f"{job_tag}/{file}"
-            _LOGGER.info(
-                "%s Uploading file to output bucket, %s", job_tag, file
-            )
+            _LOGGER.info("%s Uploading file to output bucket, %s", job_tag, file)
             output_storage.upload_file(
-                os.path.join(settings.job_path, file_path),
-                file_path
+                os.path.join(settings.job_path, file_path), file_path
             )
         except Exception as error:
             _LOGGER.exception(
@@ -831,6 +816,7 @@ def build_parser():
     )
     return parser
 
+
 def dry_run(jobinfo, inputs, outputs, metrics):
     job_tag = f"{jobinfo['job_date']}/{jobinfo['job_id']}"
     update_status(
@@ -846,6 +832,7 @@ def dry_run(jobinfo, inputs, outputs, metrics):
 
     outputs.upload_file("jobinfo.json", jobinfo["job_id"])
     print(jobinfo)
+
 
 def main() -> None:
     lasttime = datetime.now()
@@ -897,30 +884,30 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-#     update_environment(None, None)
+    #     update_environment(None, None)
 
-#     signal.signal(signal.SIGHUP, signal_help)
-#     signal.signal(signal.SIGINT, receive_signal)
-#     signal.signal(signal.SIGQUIT, receive_signal)
-#     signal.signal(signal.SIGILL, receive_signal)
-#     signal.signal(signal.SIGTRAP, receive_signal)
-#     signal.signal(signal.SIGABRT, receive_signal)
-#     signal.signal(signal.SIGBUS, receive_signal)
-#     signal.signal(signal.SIGFPE, receive_signal)
-#     # signal.signal(signal.SIGKILL, receiveSignal)
-#     signal.signal(signal.SIGUSR1, update_environment)
-#     signal.signal(signal.SIGSEGV, receive_signal)
-#     signal.signal(signal.SIGUSR2, toggle_processing)
-#     signal.signal(signal.SIGPIPE, receive_signal)
-#     signal.signal(signal.SIGALRM, receive_signal)
-#     signal.signal(signal.SIGTERM, terminate_process)
+    #     signal.signal(signal.SIGHUP, signal_help)
+    #     signal.signal(signal.SIGINT, receive_signal)
+    #     signal.signal(signal.SIGQUIT, receive_signal)
+    #     signal.signal(signal.SIGILL, receive_signal)
+    #     signal.signal(signal.SIGTRAP, receive_signal)
+    #     signal.signal(signal.SIGABRT, receive_signal)
+    #     signal.signal(signal.SIGBUS, receive_signal)
+    #     signal.signal(signal.SIGFPE, receive_signal)
+    #     # signal.signal(signal.SIGKILL, receiveSignal)
+    #     signal.signal(signal.SIGUSR1, update_environment)
+    #     signal.signal(signal.SIGSEGV, receive_signal)
+    #     signal.signal(signal.SIGUSR2, toggle_processing)
+    #     signal.signal(signal.SIGPIPE, receive_signal)
+    #     signal.signal(signal.SIGALRM, receive_signal)
+    #     signal.signal(signal.SIGTERM, terminate_process)
 
-#     parser = build_parser()
-#     args = parser.parse_args()
+    #     parser = build_parser()
+    #     args = parser.parse_args()
 
-#     if args.verbose:
-#         GLOBAL_VARS["LOG_LEVEL"] = DEBUG
-#         _LOGGER.setLevel(GLOBAL_VARS["LOG_LEVEL"])
+    #     if args.verbose:
+    #         GLOBAL_VARS["LOG_LEVEL"] = DEBUG
+    #         _LOGGER.setLevel(GLOBAL_VARS["LOG_LEVEL"])
 
     _LOGGER.setLevel(INFO)
     main()
