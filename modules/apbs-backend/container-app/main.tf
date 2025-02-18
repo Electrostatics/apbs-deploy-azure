@@ -1,3 +1,7 @@
+locals {
+  workload_profile_name = "${var.app_name}Profile"
+}
+
 data "azurerm_container_registry" "acr" {
   name                = var.registry_name
   resource_group_name = var.registry_resource_group_name
@@ -29,6 +33,12 @@ resource "azurerm_container_app_environment" "app_env" {
   location                   = var.location
   resource_group_name        = var.backend_resource_group_name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.container_app_log_analytics.id
+  workload_profile {
+    name                   = local.workload_profile_name
+    workfload_profile_type = "Consumption"
+    maximum_count          = 4
+    minimum_count          = 0
+  }
 }
 
 resource "azurerm_container_app_job" "app" {
@@ -49,6 +59,7 @@ resource "azurerm_container_app_job" "app" {
 
   replica_timeout_in_seconds = var.replica_timeout_in_seconds
   replica_retry_limit        = 1
+  workload_profile_name      = local.workload_profile_name
 
   manual_trigger_config {
     parallelism              = 1
