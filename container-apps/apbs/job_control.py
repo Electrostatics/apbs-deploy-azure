@@ -709,8 +709,8 @@ def run_job(
         else:
             try:
                 # DWHS: TODO -- check where this downloads to
-                _LOGGER.info(f"Downloading file, {job_tag}/{file} to {file}")
-                input_storage.download_file(f"{job_tag}/{file}", file)
+                _LOGGER.info(f"Downloading file, {file} to {file}")
+                input_storage.download_file(file, file)
                 # s3client.download_file(
                 #     inbucket, file, f"{GLOBAL_VARS['JOB_PATH']}{file}"
                 # )
