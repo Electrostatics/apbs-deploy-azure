@@ -108,11 +108,40 @@ class Storage:
     def upload_file(
         self, filename: os.PathLike, prefix: os.PathLike, overwrite: bool = False
     ):
+        """Upload a file to the storage container.
+
+        Args
+        ----
+        filename: os.PathLike
+            The path to the file to upload.
+        prefix: os.PathLike
+            The prefix to add to the filename.
+        overwrite: bool
+            Whether to overwrite the file if it already exists.
+        """
         blob = self.container_client.get_blob_client(f"{prefix}/{filename}")
         with open(filename, "rb") as data:
             return blob.upload_blob(data, overwrite=overwrite)
 
     def get_contents(self, key: str):
+        """Get the contents of a blob in the container.
+
+        Args
+        ----
+        key: str
+            The key of the blob to retrieve.
+
+        Returns
+        -------
+        bytes
+            The contents of the blob.
+
+        Throws
+        ------
+        ResourceNotFoundError
+            If the blob is not found in the container.
+
+        """
         blob = self.container_client.get_blob_client(key)
         try:
             return blob.download_blob().readall()
@@ -432,7 +461,6 @@ def toggle_processing(signal_number, frame):
 def update_environment(signal_number, frame):
     pass
     # DWHS TODO -- update to remove AWS-specific stuff
-
     # pylint: disable=unused-argument
     # TODO: This may need to be increased or calculated based
     #       on complexity of the job (dimension of molecule?)
@@ -692,7 +720,7 @@ def run_job(
                     error,
                 )
                 update_status(
-                    s3client,
+                    output_storage,
                     job_tag,
                     job_type,
                     JOBSTATUS.FAILED,
@@ -798,24 +826,24 @@ def run_job(
     return ret_val
 
 
-def build_parser():
-    """Build argument parser.
+# def build_parser():
+#     """Build argument parser.
 
-    :return:  argument parser
-    :rtype:  ArgumentParser
-    """
-    desc = "\n\tRun the APBS or PDB2PQR process"
+#     :return:  argument parser
+#     :rtype:  ArgumentParser
+#     """
+#     desc = "\n\tRun the APBS or PDB2PQR process"
 
-    parser = ArgumentParser(
-        description=desc,
-        formatter_class=ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Print out verbose output",
-    )
-    return parser
+#     parser = ArgumentParser(
+#         description=desc,
+#         formatter_class=ArgumentDefaultsHelpFormatter,
+#     )
+#     parser.add_argument(
+#         "--verbose",
+#         action="store_true",
+#         help="Print out verbose output",
+#     )
+#     return parser
 
 
 def dry_run(jobinfo, inputs, outputs, metrics):
@@ -855,60 +883,6 @@ def main() -> None:
     _LOGGER.info("DONE: %s", str(datetime.now() - lasttime))
 
 
-# def main() -> None:
-#     """Loop over the SQS Queue and run any jobs in the queue.
-#     :return:  None
-#     """
-
-#     s3client = client("s3")
-#     sqs = client("sqs", region_name=GLOBAL_VARS["AWS_REGION"])
-#     queue_url = sqs.get_queue_url(QueueName=GLOBAL_VARS["QUEUE"])
-#     qurl = queue_url["QueueUrl"]
-#     lasttime = datetime.now()
-
-#     metrics = JobMetrics()
-
-#     # The structure of the SQS messages is documented at:
-#     # https://docs.aws.amazon.com/AWSSimpleQueueService/
-#     # latest/APIReference/API_ReceiveMessage.html
-#     messages = get_messages(sqs, qurl)
-#     while messages:
-#         for idx in messages["Messages"]:
-#             run_job(idx["Body"], s3client, metrics, qurl, idx["ReceiptHandle"])
-#             sqs.delete_message(
-#                 QueueUrl=qurl, ReceiptHandle=idx["ReceiptHandle"]
-#             )
-#         while not PROCESSING:
-#             sleep(10)
-#         messages = get_messages(sqs, qurl)
-#     _LOGGER.info("DONE: %s", str(datetime.now() - lasttime))
-
-
 if __name__ == "__main__":
-    #     update_environment(None, None)
-
-    #     signal.signal(signal.SIGHUP, signal_help)
-    #     signal.signal(signal.SIGINT, receive_signal)
-    #     signal.signal(signal.SIGQUIT, receive_signal)
-    #     signal.signal(signal.SIGILL, receive_signal)
-    #     signal.signal(signal.SIGTRAP, receive_signal)
-    #     signal.signal(signal.SIGABRT, receive_signal)
-    #     signal.signal(signal.SIGBUS, receive_signal)
-    #     signal.signal(signal.SIGFPE, receive_signal)
-    #     # signal.signal(signal.SIGKILL, receiveSignal)
-    #     signal.signal(signal.SIGUSR1, update_environment)
-    #     signal.signal(signal.SIGSEGV, receive_signal)
-    #     signal.signal(signal.SIGUSR2, toggle_processing)
-    #     signal.signal(signal.SIGPIPE, receive_signal)
-    #     signal.signal(signal.SIGALRM, receive_signal)
-    #     signal.signal(signal.SIGTERM, terminate_process)
-
-    #     parser = build_parser()
-    #     args = parser.parse_args()
-
-    #     if args.verbose:
-    #         GLOBAL_VARS["LOG_LEVEL"] = DEBUG
-    #         _LOGGER.setLevel(GLOBAL_VARS["LOG_LEVEL"])
-
     _LOGGER.setLevel(INFO)
     main()
