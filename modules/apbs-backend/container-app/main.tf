@@ -34,10 +34,10 @@ resource "azurerm_container_app_environment" "app_env" {
   resource_group_name        = var.backend_resource_group_name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.container_app_log_analytics.id
   workload_profile {
-    name                   = local.workload_profile_name
-    workfload_profile_type = "Consumption"
-    maximum_count          = 4
-    minimum_count          = 0
+    name                  = local.workload_profile_name
+    workload_profile_type = "Consumption"
+    maximum_count         = 4
+    minimum_count         = 0
   }
 }
 
