@@ -11,7 +11,7 @@ WORKDIR /app
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 RUN apt-get update -y \
-    && apt-get install wget zip libgomp1 dumb-init \
+    && apt-get install wget zip libgomp1 dumb-init -y \
     && wget https://github.com/Electrostatics/apbs/releases/download/v${APBS_VERSION}/APBS-${APBS_VERSION}.Linux.zip \
     && unzip APBS-${APBS_VERSION}.Linux.zip \
     && rm APBS-${APBS_VERSION}.Linux.zip \
