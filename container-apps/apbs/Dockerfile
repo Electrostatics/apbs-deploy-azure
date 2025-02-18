@@ -4,7 +4,7 @@
 # We install the debiang version of the container
 FROM python:3.11-bookworm
 
-ARG APBS_VERSION=3.3.0
+ARG APBS_VERSION=3.4.1
 
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /app
