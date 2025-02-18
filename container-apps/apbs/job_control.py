@@ -108,7 +108,11 @@ class Storage:
             data.write(self.get_contents(key))
 
     def upload_file(
-        self, filename: os.PathLike, prefix: os.PathLike, overwrite: bool = False
+        self,
+        filepath: os.PathLike,
+        prefix: os.PathLike,
+        name: os.PathLike,
+        overwrite: bool = False,
     ):
         """Upload a file to the storage container.
 
@@ -121,9 +125,9 @@ class Storage:
         overwrite: bool
             Whether to overwrite the file if it already exists.
         """
-        blob = self.container_client.get_blob_client(f"{prefix}/{filename}")
-        _LOGGER.info(f"Uploading {filename} to {prefix}/{filename}")
-        with open(filename, "rb") as data:
+        blob = self.container_client.get_blob_client(f"{prefix}/{name}")
+        _LOGGER.info(f"Uploading {filepath} to {prefix}/{name}")
+        with open(filepath, "rb") as data:
             return blob.upload_blob(data, overwrite=overwrite)
 
     def get_contents(self, key: str):
@@ -792,8 +796,13 @@ def run_job(
             file_path = f"{job_tag}/{file}"
             _LOGGER.info("%s Uploading file to output bucket, %s", job_tag, file)
             output_storage.upload_file(
-                os.path.join(settings.job_path, file_path), file_path
+                filepath=os.path.join(settings.job_path, file_path),
+                prefix=job_tag,
+                name=file,
             )
+            # output_storage.upload_file(
+            #     os.path.join(settings.job_path, file_path), file_path
+            # )
         except Exception as error:
             _LOGGER.exception(
                 "%s ERROR: Failed to upload file, %s \n\t%s",
