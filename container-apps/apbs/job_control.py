@@ -687,7 +687,7 @@ def run_job(
         if "https" in file:
             name = f"{job_tag}/{file.split('/')[-1]}"
             try:
-                request.urlretrieve(file, f"{GLOBAL_VARS['JOB_PATH']}{name}")
+                request.urlretrieve(file, f"{name}")
             except Exception as error:
                 # TODO: intendo 2021/05/05 - Find more specific exception
                 _LOGGER.exception(
