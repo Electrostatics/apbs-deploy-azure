@@ -172,8 +172,8 @@ module "container-app" {
   app_name                          = "apbs-app"
   location                          = azurerm_resource_group.apbs-backend.location
   backend_resource_group_name       = azurerm_resource_group.apbs-backend.name
-  cpu                               = 0.25
-  memory                            = "0.5Gi"
+  cpu                               = 2.0
+  memory                            = "4Gi"
   image_name                        = "apbs-azure"
   image_tag                         = "latest"
   registry_name                     = var.acr_name
