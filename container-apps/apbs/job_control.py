@@ -122,7 +122,7 @@ class Storage:
             Whether to overwrite the file if it already exists.
         """
         blob = self.container_client.get_blob_client(f"{prefix}/{filename}")
-        _LOGGER.info(f"Uploading {filename}")
+        _LOGGER.info(f"Uploading {filename} to {prefix}/{filename}")
         with open(filename, "rb") as data:
             return blob.upload_blob(data, overwrite=overwrite)
 
