@@ -88,6 +88,8 @@ class Storage:
     @staticmethod
     def _kwargs_from_env(container_name: str):
         connection_string = getenv("APBS_QUEUE_CONNECTION_STRING")
+        if not connection_string:
+            raise ValueError("APBS_QUEUE_CONNECTION_STRING is not set")
         return {
             "container_client": ContainerClient.from_connection_string(
                 connection_string, container_name
@@ -707,6 +709,7 @@ def run_job(
         else:
             try:
                 # DWHS: TODO -- check where this downloads to
+                _LOGGER.info(f"Downloading file, {job_tag}/{file} to {file}")
                 input_storage.download_file(f"{job_tag}/{file}", file)
                 # s3client.download_file(
                 #     inbucket, file, f"{GLOBAL_VARS['JOB_PATH']}{file}"
