@@ -15,7 +15,7 @@ resource "azurerm_storage_account" "storage" {
     last_access_time_enabled = var.enable_last_access_time
     cors_rule {
       allowed_headers    = ["content-type", "accept", "x-ms-*", "authorization", "origin"]
-      allowed_methods    = ["PUT", "GET"]
+      allowed_methods    = ["PUT", "GET", "HEAD"]
       allowed_origins    = ["*"]
       exposed_headers    = ["x-ms-*"]
       max_age_in_seconds = 3600
