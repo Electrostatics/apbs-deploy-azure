@@ -181,3 +181,15 @@ module "container-app" {
   job_queue_name                    = resource.azurerm_storage_queue.apbs-backend-queue.name
   storage_primary_connection_string = module.backend_storage.storage_account.primary_connection_string
 }
+
+resource "azurerm_user_assigned_identity" "apbs-container-app-access" {
+  name                = "apbs-container-app-access"
+  location            = azurerm_resource_group.apbs-backend.location
+  resource_group_name = azurerm_resource_group.apbs-backend.name
+}
+
+resource "azurerm_role_assignment" "apb-output-blob-access" {
+  scope                = module.container-app.id
+  role_definition_name = "Container App Jobs Operator"
+  principal_id         = azurerm_user_assigned_identity.apbs-container-app-access.principal_id
+}
