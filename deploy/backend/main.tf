@@ -188,7 +188,7 @@ resource "azurerm_user_assigned_identity" "apbs-container-app-access" {
   resource_group_name = azurerm_resource_group.apbs-backend.name
 }
 
-resource "azurerm_role_assignment" "apb-output-blob-access" {
+resource "azurerm_role_assignment" "apbs-container-app-access" {
   scope                = module.container-app.id
   role_definition_name = "Container App Jobs Operator"
   principal_id         = azurerm_user_assigned_identity.apbs-container-app-access.principal_id
