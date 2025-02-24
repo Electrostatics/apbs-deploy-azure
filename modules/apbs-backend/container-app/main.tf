@@ -79,11 +79,11 @@ resource "azurerm_container_app_job" "app" {
       }
       env {
         name  = "APBS_STORAGE_ACCOUNT_URL"
-        value = module.backend_storage.storage_account.primary_blob_endpoint
+        value = var.storage_account_url
       }
       env {
         name  = "APBS_QUEUE_URL"
-        value = module.backend_storage.storage_account.primary_queue_endpoint
+        value = var.job_queue_url
       }
     }
   }
