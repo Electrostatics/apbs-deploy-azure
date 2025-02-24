@@ -127,78 +127,67 @@ resource "azurerm_user_assigned_identity" "apbs-backend-queue-access" {
   resource_group_name = azurerm_resource_group.apbs-backend.name
 }
 
-resource "azurerm_role_definition" "apbs-backend-queue-restrictions" {
-  name = "APBS Backend Queue Access"
+resource "azurerm_role_definition" "apbs-backend-data-access" {
+  name = "APBS Backend Data Access"
   # Restrict this to the queue
-  scope = azurerm_storage_queue.apbs-backend-queue.resource_manager_id
+  scope = module.backend_storage.storage_account.id
   permissions {
     actions = [
       "Microsoft.Storage/storageAccounts/queueServices/queues/read",
-      "Microsoft.Storage/storageAccounts/queueServices/queues/write",
-      "Microsoft.Storage/storageAccounts/queueServices/queues/delete",
-      "Microsoft.Storage/storageAccounts/listKeys/action"
+      "Miscrosoft.Storage/storageAccounts/blobServices/containers/read"
     ]
     not_actions = []
     data_actions = [
+      // Queue message operations
       "Microsoft.Storage/storageAccounts/queueServices/queues/messages/read",
       "Microsoft.Storage/storageAccounts/queueServices/queues/messages/write",
       "Microsoft.Storage/storageAccounts/queueServices/queues/messages/delete",
-      "Microsoft.Storage/storageAccounts/queueServices/queues/messages/process/action"
+      "Microsoft.Storage/storageAccounts/queueServices/queues/messages/process/action",
+
+      // Blob operations
+      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read",
+      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write",
+      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/add/action",
+      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/delete"
     ]
     not_data_actions = []
   }
 }
 
-resource "azurerm_role_assignment" "apbs-backend-queue-access" {
-  scope              = azurerm_storage_queue.apbs-backend-queue.resource_manager_id
-  role_definition_id = azurerm_role_definition.apbs-backend-queue-restrictions.role_definition_resource_id
-  principal_id       = azurerm_user_assigned_identity.apbs-backend-queue-access.principal_id
-}
-
-resource "azurerm_user_assigned_identity" "apbs-blob-access" {
+# The following is the identity used by the container app to access the storage account,
+# the queue, and the blob storage.
+resource "azurerm_user_assigned_identity" "apbs-backend-data-access" {
   name                = "apbs-blob-access"
   location            = azurerm_resource_group.apbs-backend.location
   resource_group_name = azurerm_resource_group.apbs-backend.name
 }
 
-resource "azurerm_role_assignment" "apbs-output-blob-access" {
-  scope                = module.outputs_blob.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_user_assigned_identity.apbs-blob-access.principal_id
-}
-
-resource "azurerm_role_assignment" "apbs-input-blob-access" {
-  scope                = module.inputs_blob.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_user_assigned_identity.apbs-blob-access.principal_id
-}
-
-resource "azurerm_role_assignment" "apbs-queue-access" {
+resource "azurerm_role_assignment" "apbs-backend-data-access" {
   scope              = azurerm_storage_queue.apbs-backend-queue.resource_manager_id
-  role_definition_id = azurerm_role_definition.apbs-backend-queue-restrictions.role_definition_resource_id
-  principal_id       = azurerm_user_assigned_identity.apbs-blob-access.principal_id
+  role_definition_id = azurerm_role_definition.apbs-backend-data-access.role_definition_resource_id
+  principal_id       = azurerm_user_assigned_identity.apbs-backend-data-access.principal_id
 }
-
-
 
 module "container-app" {
-  source                            = "../../modules/apbs-backend/container-app"
-  app_name                          = "apbs-app"
-  location                          = azurerm_resource_group.apbs-backend.location
-  backend_resource_group_name       = azurerm_resource_group.apbs-backend.name
-  cpu                               = 4.0
-  memory                            = "8Gi"
-  image_name                        = "apbs-azure"
-  image_tag                         = "latest"
-  registry_name                     = var.acr_name
-  registry_resource_group_name      = var.acr_resource_group_name
-  job_queue_name                    = resource.azurerm_storage_queue.apbs-backend-queue.name
-  storage_primary_connection_string = module.backend_storage.storage_account.primary_connection_string
-  job_queue_url                     = module.backend_storage.storage_account.primary_queue_endpoint
-  storage_account_url               = module.backend_storage.storage_account.primary_blob_endpoint
-  execution_role_id                 = azurerm_user_assigned_identity.apbs-blob-access.id
+  source                       = "../../modules/apbs-backend/container-app"
+  app_name                     = "apbs-app"
+  location                     = azurerm_resource_group.apbs-backend.location
+  backend_resource_group_name  = azurerm_resource_group.apbs-backend.name
+  cpu                          = 4.0
+  memory                       = "8Gi"
+  image_name                   = "apbs-azure"
+  image_tag                    = "latest"
+  registry_name                = var.acr_name
+  registry_resource_group_name = var.acr_resource_group_name
+  job_queue_name               = resource.azurerm_storage_queue.apbs-backend-queue.name
+  job_queue_url                = module.backend_storage.storage_account.primary_queue_endpoint
+  storage_account_url          = module.backend_storage.storage_account.primary_blob_endpoint
+  execution_role_id            = azurerm_user_assigned_identity.apbs-backend-data-access.id
+  execution_role_client_id     = azurerm_user_assigned_identity.apbs-backend-data-access.client_id
 }
 
+# These are currently being used by the static web app but we are not managing
+# that with terraform at this time.
 resource "azurerm_user_assigned_identity" "apbs-container-app-access" {
   name                = "apbs-container-app-access"
   location            = azurerm_resource_group.apbs-backend.location

@@ -55,14 +55,13 @@ variable "job_queue_name" {
   sensitive   = true
 }
 
-variable "storage_primary_connection_string" {
-  description = "The primary connection string for the storage account"
-  type        = string
-  sensitive   = true
-}
-
 variable "execution_role_id" {
   description = "The execution role to use"
+  type        = string
+}
+
+variable "execution_role_client_id" {
+  description = "The client ID of the execution role"
   type        = string
 }
 

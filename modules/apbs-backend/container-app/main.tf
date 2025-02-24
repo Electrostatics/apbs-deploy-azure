@@ -73,11 +73,6 @@ resource "azurerm_container_app_job" "app" {
         value = var.job_queue_name
       }
       env {
-        # DEPRECATE
-        name  = "APBS_QUEUE_CONNECTION_STRING"
-        value = var.storage_primary_connection_string
-      }
-      env {
         name  = "APBS_STORAGE_ACCOUNT_URL"
         value = var.storage_account_url
       }
@@ -87,7 +82,7 @@ resource "azurerm_container_app_job" "app" {
       }
       env {
         name  = "AZURE_CLIENT_ID"
-        value = var.execution_role_id
+        value = var.execution_role_client_id
       }
     }
   }
