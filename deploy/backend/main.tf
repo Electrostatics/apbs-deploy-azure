@@ -157,7 +157,7 @@ resource "azurerm_role_definition" "apbs-backend-data-access" {
 # The following is the identity used by the container app to access the storage account,
 # the queue, and the blob storage.
 resource "azurerm_user_assigned_identity" "apbs-backend-data-access" {
-  name                = "apbs-blob-access"
+  name                = "apbs-backend-data-access"
   location            = azurerm_resource_group.apbs-backend.location
   resource_group_name = azurerm_resource_group.apbs-backend.name
 }
