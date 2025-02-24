@@ -198,9 +198,9 @@ module "container-app" {
   job_queue_url                     = module.backend_storage.storage_account.primary_queue_endpoint
   storage_account_url               = module.backend_storage.storage_account.primary_blob_endpoint
   extra_role_ids = [
-    azurerm_role_assignment.apbs-backend-queue-access.id,
-    azurerm_role_assignment.apbs-input-blob-access.id,
-    azurerm_role_assignment.apbs-output-blob-access.id
+    azurerm_user_assigned_identity.apbs-backend-queue-access.id,
+    azurerm_user_assigned_identity.apbs-input-blob-access.id,
+    azurerm_user_assigned_identity.apbs-output-blob-access.id
   ]
 }
 
