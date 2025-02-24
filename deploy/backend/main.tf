@@ -134,7 +134,7 @@ resource "azurerm_role_definition" "apbs-backend-data-access" {
   permissions {
     actions = [
       "Microsoft.Storage/storageAccounts/queueServices/queues/read",
-      "Miscrosoft.Storage/storageAccounts/blobServices/containers/read"
+      "Microsoft.Storage/storageAccounts/blobServices/containers/read"
     ]
     not_actions = []
     data_actions = [
