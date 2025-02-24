@@ -25,8 +25,9 @@ import base64
 # from botocore.exceptions import ClientError, ParamValidationError
 
 from azure.storage.queue import QueueClient
-from azure.storage.blob import ContainerClient
+from azure.storage.blob import BlobServiceClient, ContainerClient
 from azure.core.exceptions import ResourceNotFoundError
+from azure.identity import DefaultAzureCredential
 
 from dataclasses import dataclass
 
@@ -81,20 +82,28 @@ class JOBSTATUS(Enum):
 class Storage:
     """Wrapper around Azure Blob Storage."""
 
-    def __init__(self, container_client: ContainerClient):
-        self.container_client = container_client
-        self.container_name = container_client.container_name
+    def __init__(self, container_name: str, blob_service_client: BlobServiceClient):
+        # self.container_client = container_client
+        # self.container_name = container_client.container_name
+        self.blob_service_client = blob_service_client
+        self.container_client = blob_service_client.get_container_client(container_name)
 
     @staticmethod
     def _kwargs_from_env(container_name: str):
-        connection_string = getenv("APBS_QUEUE_CONNECTION_STRING")
-        if not connection_string:
-            raise ValueError("APBS_QUEUE_CONNECTION_STRING is not set")
+        credential = DefaultAzureCredential()
+        storage_account_url = getenv("APBS_STORAGE_ACCOUNT_URL")
+        if not storage_account_url:
+            raise ValueError("APBS_STORAGE_ACCOUNT_URL is not set")
         return {
-            "container_client": ContainerClient.from_connection_string(
-                connection_string, container_name
-            )
+            "container_name": container_name,
+            "blob_service_client": BlobServiceClient(
+                storage_account_url, credential=credential
+            ),
         }
+        # connection_string = getenv("APBS_QUEUE_CONNECTION_STRING")
+        # if not connection_string:
+        #     raise ValueError("APBS_QUEUE_CONNECTION_STRING is not set")
+        # return {"container_client": ContainerClient(connection_string, container_name)}
 
     @classmethod
     def from_environment(cls, container_name: str):
@@ -185,12 +194,18 @@ class Queue:
 
     @staticmethod
     def _kwargs_from_env():
-        connection_string = getenv("APBS_QUEUE_CONNECTION_STRING")
+        credential = DefaultAzureCredential()
         storage_queue_name = getenv("APBS_QUEUE_NAME")
+        if not storage_queue_name:
+            raise ValueError("APBS_QUEUE_NAME is not set")
+        queue_url = getenv("APBS_QUEUE_URL")
+        if not queue_url:
+            raise ValueError("APBS_QUEUE_URL is not set")
+        queue_client = QueueClient(
+            queue_url, queue_name=storage_queue_name, credential=credential
+        )
         dct = {
-            "queue": QueueClient.from_connection_string(
-                connection_string, storage_queue_name
-            ),
+            "queue": queue_client,
             "max_tries": int(getenv("MAX_TRIES", "60")),
             "retry_time": int(getenv("RETRY_TIME", "15")),
             "visibility_timeout": int(getenv("Q_TIMEOUT", "300")),
@@ -859,7 +874,7 @@ def run_job(
 #     return parser
 
 
-def dry_run(jobinfo, inputs, outputs, metrics):
+def dry_run(jobinfo, inputs, outputs: Storage, metrics):
     job_tag = f"{jobinfo['job_date']}/{jobinfo['job_id']}"
     update_status(
         outputs,
@@ -872,7 +887,12 @@ def dry_run(jobinfo, inputs, outputs, metrics):
     with open("jobinfo.json", "w") as fout:
         fout.write(dumps(jobinfo, indent=4))
 
-    outputs.upload_file("jobinfo.json", jobinfo["job_id"])
+    # outputs.upload_file("jobinfo.json", jobinfo["job_id"])
+    outputs.upload_file(
+        filepath="jobinfo.json",
+        prefix=job_tag,
+        name="jobinfo.json",
+    )
     print(jobinfo)
 
 

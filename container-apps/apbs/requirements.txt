@@ -1,3 +1,4 @@
 pdb2pqr
 azure-storage-blob
 azure-storage-queue
+azure-identity
