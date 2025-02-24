@@ -60,3 +60,19 @@ variable "storage_primary_connection_string" {
   type        = string
   sensitive   = true
 }
+
+variable "extra_role_ids" {
+  description = "Extra role IDs to assign to the container app"
+  type        = list(string)
+  default     = []
+}
+
+variable "storage_account_url" {
+  description = "The URL of the storage account"
+  type        = string
+}
+
+variable "job_queue_url" {
+  description = "The URL of the queue"
+  type        = string
+}

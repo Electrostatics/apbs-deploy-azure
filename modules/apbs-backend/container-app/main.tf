@@ -45,7 +45,7 @@ resource "azurerm_container_app_job" "app" {
 
   identity {
     type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.container_app_identity.id]
+    identity_ids = concat(var.extra_role_ids, [azurerm_user_assigned_identity.container_app_identity.id])
   }
 
   registry {
@@ -73,9 +73,17 @@ resource "azurerm_container_app_job" "app" {
         value = var.job_queue_name
       }
       env {
-        # Swap this to a role instead
+        # DEPRECATE
         name  = "APBS_QUEUE_CONNECTION_STRING"
         value = var.storage_primary_connection_string
+      }
+      env {
+        name  = "APBS_STORAGE_ACCOUNT_URL"
+        value = module.backend_storage.storage_account.primary_blob_endpoint
+      }
+      env {
+        name  = "APBS_QUEUE_URL"
+        value = module.backend_storage.storage_account.primary_queue_endpoint
       }
     }
   }

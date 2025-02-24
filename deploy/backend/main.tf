@@ -167,6 +167,21 @@ resource "azurerm_role_assignment" "apb-output-blob-access" {
   principal_id         = azurerm_user_assigned_identity.apbs-output-blob-access.principal_id
 }
 
+
+resource "azurerm_user_assigned_identity" "apbs-input-blob-access" {
+  name                = "apbs-input-blob-access"
+  location            = azurerm_resource_group.apbs-backend.location
+  resource_group_name = azurerm_resource_group.apbs-backend.name
+}
+
+resource "azurerm_role_assignment" "apb-input-blob-access" {
+  scope                = module.inputs_blob.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_user_assigned_identity.apbs-input-blob-access.principal_id
+}
+
+
+
 module "container-app" {
   source                            = "../../modules/apbs-backend/container-app"
   app_name                          = "apbs-app"
@@ -180,6 +195,13 @@ module "container-app" {
   registry_resource_group_name      = var.acr_resource_group_name
   job_queue_name                    = resource.azurerm_storage_queue.apbs-backend-queue.name
   storage_primary_connection_string = module.backend_storage.storage_account.primary_connection_string
+  job_queue_url                     = module.backend_storage.storage_account.primary_queue_endpoint
+  storage_account_url               = module.backend_storage.storage_account.primary_blob_endpoint
+  extra_role_ids = [
+    azurerm_role_assignment.apbs-backend-queue-access.id,
+    azurerm_role_assignment.apbs-input-blob-access.id,
+    azurerm_role_assignment.apb-output-blob-access.id
+  ]
 }
 
 resource "azurerm_user_assigned_identity" "apbs-container-app-access" {
