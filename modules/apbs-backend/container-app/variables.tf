@@ -61,10 +61,9 @@ variable "storage_primary_connection_string" {
   sensitive   = true
 }
 
-variable "extra_role_ids" {
-  description = "Extra role IDs to assign to the container app"
-  type        = list(string)
-  default     = []
+variable "execution_role_id" {
+  description = "The execution role to use"
+  type        = string
 }
 
 variable "storage_account_url" {

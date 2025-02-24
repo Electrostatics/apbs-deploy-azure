@@ -45,7 +45,7 @@ resource "azurerm_container_app_job" "app" {
 
   identity {
     type         = "UserAssigned"
-    identity_ids = concat(var.extra_role_ids, [azurerm_user_assigned_identity.container_app_identity.id])
+    identity_ids = [azurerm_user_assigned_identity.container_app_identity.id, var.execution_role_id]
   }
 
   registry {
@@ -84,6 +84,10 @@ resource "azurerm_container_app_job" "app" {
       env {
         name  = "APBS_QUEUE_URL"
         value = var.job_queue_url
+      }
+      env {
+        name  = "AZURE_CLIENT_ID"
+        value = var.execution_role_id
       }
     }
   }
