@@ -174,7 +174,7 @@ resource "azurerm_role_assignment" "apbs-input-blob-access" {
 }
 
 resource "azurerm_role_assignment" "apbs-queue-access" {
-  scope              = azurerm_storage_queue.apbs-backend-queue.id
+  scope              = azurerm_storage_queue.apbs-backend-queue.resource_manager_id
   role_definition_id = azurerm_role_definition.apbs-backend-queue-restrictions.role_definition_resource_id
   principal_id       = azurerm_user_assigned_identity.apbs-blob-access.principal_id
 }
