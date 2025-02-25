@@ -107,7 +107,7 @@ resource "azurerm_resource_group" "apbs-backend" {
 
 module "backend_storage" {
   source                  = "../../modules/apbs-backend/storage-account"
-  name                    = locals.env_config.storage_account_name
+  name                    = local.env_config.storage_account_name
   resource_group_name     = azurerm_resource_group.apbs-backend.name
   resource_group_location = azurerm_resource_group.apbs-backend.location
 }
