@@ -38,12 +38,49 @@ provider "azurerm" {
 
 
 locals {
-  github_info = {
-    repository    = "apbs-web-testing-fork"
-    branch        = "aws-release"
-    secret_prefix = "AZURE"
+  # Workspace specific config
+  workspace_config = {
+    default = {
+      resource_group_name = "apbs-backend"
+      app_name            = "apbs-app"
+      cpu                 = 4.0
+      memory              = "8Gi"
+      image_tag           = "latest"
+      github_info = {
+        repository    = "apbs-web-testing-fork"
+        branch        = "aws-release"
+        secret_prefix = "AZURE"
+      }
+      storage_policy = {
+        inputs = {
+          cool_after    = 14
+          archive_after = 30
+          delete_after  = 60
+        }
+      }
+    }
+    dev = {
+      resource_group_name = "apbs-backend-dev"
+      app_name            = "apbs-app-dev"
+      cpu                 = 2.0
+      memory              = "4Gi"
+      image_tag           = "dev"
+      github_info = {
+        repository    = "apbs-web-testing-fork"
+        branch        = "aws-release"
+        secret_prefix = "AZURE_DEV"
+      }
+      storage_policy = {
+        inputs = {
+          cool_after    = null
+          archive_after = null
+          delete_after  = 7
+        }
+      }
+    }
   }
-  blobs = ["inputs", "outputs"]
+  env_config = lookup(local.workspace_config, terraform.workspace, local.workspace_config.dev)
+  blobs      = ["inputs", "outputs"]
 }
 
 variable "acr_name" {
@@ -62,7 +99,7 @@ data "azurerm_client_config" "current" {}
 
 
 resource "azurerm_resource_group" "apbs-backend" {
-  name     = "apbs-backend"
+  name     = local.env_config.resource_group_name
   location = "East US"
 }
 
@@ -87,33 +124,33 @@ module "outputs_blob" {
 }
 
 resource "github_actions_secret" "output_blob_storage_url" {
-  repository      = local.github_info.repository
-  secret_name     = "${local.github_info.secret_prefix}_OUTPUT_BLOB_STORAGE_URL"
+  repository      = local.env_config.github_info.repository
+  secret_name     = "${local.env_config.github_info.secret_prefix}_OUTPUT_BLOB_STORAGE_URL"
   plaintext_value = "https://${module.backend_storage.storage_account.name}.blob.core.windows.net/${module.outputs_blob.name}"
 }
 
 
 resource "azurerm_storage_management_policy" "inputs" {
   storage_account_id = module.backend_storage.storage_account.id
-
-  rule {
-    name    = "inputs"
-    enabled = true
-    filters {
-      blob_types   = ["blockBlob"]
-      prefix_match = ["inputs/"]
-    }
-    actions {
-      base_blob {
-        # Put this into "cool" after 14 days
-        tier_to_cool_after_days_since_last_access_time_greater_than = 14
-        # Put this into "archive" after 30 days
-        tier_to_archive_after_days_since_last_access_time_greater_than = 30
-        # Delete after 60 days
-        delete_after_days_since_last_access_time_greater_than = 60
+  dynamic "rule" {
+    for_each = local.env_config.storage_policy
+    content {
+      name    = "${rule.key}-lifecycle"
+      enabled = true
+      filters {
+        blob_types   = ["blockBlob"]
+        prefix_match = ["${rule.key}/"]
+      }
+      actions {
+        base_blob {
+          tier_to_cool_after_days_since_last_access_time_greater_than    = rule.value.cool_after
+          tier_to_archive_after_days_since_last_access_time_greater_than = rule.value.archive_after
+          delete_after_days_since_last_access_time_greater_than          = rule.value.delete_after
+        }
       }
     }
   }
+
 }
 
 resource "azurerm_storage_queue" "apbs-backend-queue" {
@@ -173,10 +210,10 @@ module "container-app" {
   app_name                     = "apbs-app"
   location                     = azurerm_resource_group.apbs-backend.location
   backend_resource_group_name  = azurerm_resource_group.apbs-backend.name
-  cpu                          = 4.0
-  memory                       = "8Gi"
+  cpu                          = local.env_config.cpu
+  memory                       = local.env_config.memory
   image_name                   = "apbs-azure"
-  image_tag                    = "latest"
+  image_tag                    = local.env_config.image_tag
   registry_name                = var.acr_name
   registry_resource_group_name = var.acr_resource_group_name
   job_queue_name               = resource.azurerm_storage_queue.apbs-backend-queue.name

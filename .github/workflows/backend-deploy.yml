@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - dev
     paths:
       - "deploy/backend/**"
       - "modules/**"
@@ -10,11 +11,28 @@ on:
   workflow_dispatch:
 
 jobs:
+  determine-workspace:
+    runs-on: ubuntu-latest
+    outputs:
+      workspace: ${{ steps.set-workspace.outputs.workspace }}
+    steps:
+      - name: Determine Workspace
+        id: set-workspace
+        run: |
+          if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
+            echo "::set-output name=workspace::default"
+          elif [[ ${{ github.ref}} == 'refs/heads/dev' ]]; then
+            echo "::set-output name=workspace::dev"
+          else
+            exit 1
+          fi
   deploy:
+    needs: determine-workspace
     permissions:
       contents: read
       id-token: write
     uses: ./.github/workflows/reusable-deploy.yml
     with:
       working_directory: "./deploy/backend"
+      workspace: ${{ needs.determine-workspace.outputs.workspace }}
     secrets: inherit

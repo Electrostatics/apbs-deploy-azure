@@ -5,6 +5,10 @@ on:
       working_directory:
         required: true # The working directory to run the workflow in
         type: string
+      workspace:
+        required: false # The workspace to use for the workflow
+        type: string
+        default: default
 
 jobs:
   deploy:
@@ -24,6 +28,9 @@ jobs:
 
       - uses: opentofu/setup-opentofu@v1
 
+      - name: Set OpenTofu workspace
+        run: tofu workspace select ${{ inputs.workspace }}
+
       - name: OpenTofu init
         id: init
         run: tofu init
@@ -41,7 +48,7 @@ jobs:
         run: tofu validate -no-color
 
       - name: OpenTofu plan
-        run: tofu plan -no-color
+        run: tofu plan -no-color > tofu-plan-${{ github.run_id }}.txt 2>&1
         env:
           ARM_USE_OIDC: true
           ARM_CLIENT_ID: ${{ secrets.TF_BACKEND_CLIENT_ID }}
