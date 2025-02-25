@@ -41,12 +41,13 @@ locals {
   # Workspace specific config
   workspace_config = {
     default = {
-      resource_group_name  = "apbs-backend"
-      app_name             = "apbs-app"
-      storage_account_name = "apbsblobs"
-      cpu                  = 4.0
-      memory               = "8Gi"
-      image_tag            = "latest"
+      resource_group_name          = "apbs-backend"
+      app_name                     = "apbs-app"
+      storage_account_name         = "apbsblobs"
+      backend_role_definition_name = "APBS Backend Data Access"
+      cpu                          = 4.0
+      memory                       = "8Gi"
+      image_tag                    = "latest"
       github_info = {
         repository    = "apbs-web-testing-fork"
         branch        = "aws-release"
@@ -61,12 +62,13 @@ locals {
       }
     }
     dev = {
-      resource_group_name  = "apbs-backend-dev"
-      app_name             = "apbs-app-dev"
-      storage_account_name = "apbsblobsdev"
-      cpu                  = 2.0
-      memory               = "4Gi"
-      image_tag            = "latest"
+      resource_group_name          = "apbs-backend-dev"
+      app_name                     = "apbs-app-dev"
+      storage_account_name         = "apbsblobsdev"
+      backend_role_definition_name = "APBS Backend Data Access Dev"
+      cpu                          = 2.0
+      memory                       = "4Gi"
+      image_tag                    = "latest"
       github_info = {
         repository    = "apbs-web-testing-fork"
         branch        = "aws-release"
@@ -167,7 +169,7 @@ resource "azurerm_user_assigned_identity" "apbs-backend-queue-access" {
 }
 
 resource "azurerm_role_definition" "apbs-backend-data-access" {
-  name = "APBS Backend Data Access"
+  name = local.env_config.backend_role_definition_name
   # Restrict this to the queue
   scope = module.backend_storage.storage_account.id
   permissions {
