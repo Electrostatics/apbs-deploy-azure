@@ -41,11 +41,12 @@ locals {
   # Workspace specific config
   workspace_config = {
     default = {
-      resource_group_name = "apbs-backend"
-      app_name            = "apbs-app"
-      cpu                 = 4.0
-      memory              = "8Gi"
-      image_tag           = "latest"
+      resource_group_name  = "apbs-backend"
+      app_name             = "apbs-app"
+      storage_account_name = "apbsblobs"
+      cpu                  = 4.0
+      memory               = "8Gi"
+      image_tag            = "latest"
       github_info = {
         repository    = "apbs-web-testing-fork"
         branch        = "aws-release"
@@ -60,11 +61,12 @@ locals {
       }
     }
     dev = {
-      resource_group_name = "apbs-backend-dev"
-      app_name            = "apbs-app-dev"
-      cpu                 = 2.0
-      memory              = "4Gi"
-      image_tag           = "dev"
+      resource_group_name  = "apbs-backend-dev"
+      app_name             = "apbs-app-dev"
+      storage_account_name = "apbsblobsdev"
+      cpu                  = 2.0
+      memory               = "4Gi"
+      image_tag            = "dev"
       github_info = {
         repository    = "apbs-web-testing-fork"
         branch        = "aws-release"
@@ -105,7 +107,7 @@ resource "azurerm_resource_group" "apbs-backend" {
 
 module "backend_storage" {
   source                  = "../../modules/apbs-backend/storage-account"
-  name                    = "apbs-blobs"
+  name                    = locals.env_config.storage_account_name
   resource_group_name     = azurerm_resource_group.apbs-backend.name
   resource_group_location = azurerm_resource_group.apbs-backend.location
 }
