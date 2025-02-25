@@ -66,7 +66,7 @@ locals {
       storage_account_name = "apbsblobsdev"
       cpu                  = 2.0
       memory               = "4Gi"
-      image_tag            = "dev"
+      image_tag            = "latest"
       github_info = {
         repository    = "apbs-web-testing-fork"
         branch        = "aws-release"
