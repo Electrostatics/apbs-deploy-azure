@@ -163,9 +163,9 @@ resource "azurerm_user_assigned_identity" "apbs-backend-data-access" {
 }
 
 resource "azurerm_role_assignment" "apbs-backend-data-access" {
-  scope              = azurerm_storage_queue.apbs-backend-queue.resource_manager_id
-  role_definition_id = azurerm_role_definition.apbs-backend-data-access.role_definition_resource_id
-  principal_id       = azurerm_user_assigned_identity.apbs-backend-data-access.principal_id
+  scope              = sensitive(azurerm_storage_queue.apbs-backend-queue.resource_manager_id)
+  role_definition_id = sensitive(azurerm_role_definition.apbs-backend-data-access.role_definition_resource_id)
+  principal_id       = sensitive(azurerm_user_assigned_identity.apbs-backend-data-access.principal_id)
 }
 
 module "container-app" {
@@ -182,8 +182,8 @@ module "container-app" {
   job_queue_name               = resource.azurerm_storage_queue.apbs-backend-queue.name
   job_queue_url                = module.backend_storage.storage_account.primary_queue_endpoint
   storage_account_url          = module.backend_storage.storage_account.primary_blob_endpoint
-  execution_role_id            = azurerm_user_assigned_identity.apbs-backend-data-access.id
-  execution_role_client_id     = azurerm_user_assigned_identity.apbs-backend-data-access.client_id
+  execution_role_id            = sensitive(azurerm_user_assigned_identity.apbs-backend-data-access.id)
+  execution_role_client_id     = sensitive(azurerm_user_assigned_identity.apbs-backend-data-access.client_id)
 }
 
 # These are currently being used by the static web app but we are not managing
@@ -197,5 +197,5 @@ resource "azurerm_user_assigned_identity" "apbs-container-app-access" {
 resource "azurerm_role_assignment" "apbs-container-app-access" {
   scope                = module.container-app.id
   role_definition_name = "Container Apps Jobs Operator"
-  principal_id         = azurerm_user_assigned_identity.apbs-container-app-access.principal_id
+  principal_id         = sensitive(azurerm_user_assigned_identity.apbs-container-app-access.principal_id)
 }
