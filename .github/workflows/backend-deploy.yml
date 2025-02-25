@@ -20,9 +20,9 @@ jobs:
         id: set-workspace
         run: |
           if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
-            echo "::set-output name=workspace::default"
+            echo "workspace=default" >> $GITHUB_OUTPUT
           elif [[ ${{ github.ref}} == 'refs/heads/dev' ]]; then
-            echo "::set-output name=workspace::dev"
+            echo "workspace=dev" >> $GITHUB_OUTPUT
           else
             exit 1
           fi

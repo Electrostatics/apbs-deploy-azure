@@ -28,12 +28,20 @@ jobs:
 
       - uses: opentofu/setup-opentofu@v1
 
-      - name: Set OpenTofu workspace
-        run: tofu workspace select ${{ inputs.workspace }}
-
       - name: OpenTofu init
         id: init
         run: tofu init
+        env:
+          ARM_USE_OIDC: true
+          ARM_CLIENT_ID: ${{ secrets.TF_BACKEND_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.TF_BACKEND_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_acr_name: ${{ secrets.ACR_NAME }}
+          TF_VAR_acr_resource_group_name: ${{ secrets.ACR_RESOURCE_GROUP_NAME }}
+          GH_TOKEN: ${{ secrets.TF_VAR_GITHUB_TOKEN }}
+
+      - name: Set OpenTofu workspace
+        run: tofu workspace select ${{ inputs.workspace }}
         env:
           ARM_USE_OIDC: true
           ARM_CLIENT_ID: ${{ secrets.TF_BACKEND_CLIENT_ID }}
