@@ -59,6 +59,11 @@ locals {
           archive_after = 30
           delete_after  = 60
         }
+        outputs = {
+          cool_after    = 14
+          archive_after = 30
+          delete_after  = 60
+        }
       }
     }
     dev = {
@@ -76,6 +81,11 @@ locals {
       }
       storage_policy = {
         inputs = {
+          cool_after    = null
+          archive_after = null
+          delete_after  = 7
+        }
+        outputs = {
           cool_after    = null
           archive_after = null
           delete_after  = 7
@@ -134,7 +144,7 @@ resource "github_actions_secret" "output_blob_storage_url" {
 }
 
 
-resource "azurerm_storage_management_policy" "inputs" {
+resource "azurerm_storage_management_policy" "storage_policies" {
   storage_account_id = module.backend_storage.storage_account.id
   dynamic "rule" {
     for_each = local.env_config.storage_policy
