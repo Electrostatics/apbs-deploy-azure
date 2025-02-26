@@ -12,6 +12,7 @@ This repo holds OpenTofu modules for deploying pdb2pqr and apbs on Azure.
   ├── apbs-backend -> Modules used for deploying the backend
   │   ├── storage -> Used to abstract storage containes
   │   ├── storage-account -> Storage account module
+  │   ├── container-app -> Manages the container app deployment
   ├── apbs-web
   │   ├── cdn -> CDN module (not used, but kept for reference)
   │   ├── github_oidc -> GitHub OIDC module (not used, but kept for reference)
@@ -20,6 +21,8 @@ This repo holds OpenTofu modules for deploying pdb2pqr and apbs on Azure.
 ```
 
 ## Deployment
+This repo utilizes OpenTofu for deployment.
+Additionally, we are using [OpenTofu Workspaces](https://opentofu.org/docs/language/state/workspaces/) to manage multiple deployments.
 Deployment happens in multiple stages.
 
 Stage 1: Deploy the registry
@@ -33,5 +36,6 @@ Stage 2: Deploy the backend
 ```sh
 cd deploy/backend
 tofu init
+tofu workspace select <default/dev>
 tofu plan tofu apply
 ```
