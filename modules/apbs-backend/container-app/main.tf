@@ -32,7 +32,7 @@ resource "azurerm_container_app_environment" "app_env" {
   workload_profile {
     name                  = "Consumption"
     workload_profile_type = "Consumption"
-    maximum_count         = 4
+    maximum_count         = 0
     minimum_count         = 0
   }
 }
