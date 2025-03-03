@@ -255,11 +255,3 @@ resource "azurerm_role_assignment" "apbs-container-app-access" {
   role_definition_name = "Container Apps Jobs Operator"
   principal_id         = sensitive(azurerm_user_assigned_identity.apbs-container-app-access.principal_id)
 }
-
-module "function" {
-  source                  = "../../modules/apbs-backend/functions"
-  name                    = "apbs-function"
-  resource_group_name     = azurerm_resource_group.apbs-function-backend.name
-  resource_group_location = azurerm_resource_group.apbs-function-backend.location
-  plan_name               = "apbs-function-plan"
-}
