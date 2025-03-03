@@ -56,7 +56,7 @@ jobs:
         run: tofu validate -no-color
 
       - name: OpenTofu plan
-        run: tofu plan -no-color > tofu-plan-${{ github.run_id }}.txt 2>&1
+        run: tofu plan -no-color
         env:
           ARM_USE_OIDC: true
           ARM_CLIENT_ID: ${{ secrets.TF_BACKEND_CLIENT_ID }}
