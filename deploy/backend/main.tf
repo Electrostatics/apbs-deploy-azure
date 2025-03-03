@@ -261,6 +261,5 @@ module "function" {
   name                    = "apbs-function"
   resource_group_name     = azurerm_resource_group.apbs-function-backend.name
   resource_group_location = azurerm_resource_group.apbs-function-backend.location
-  storage_account_name    = "apbsfunctionstorage"
   plan_name               = "apbs-function-plan"
 }
