@@ -2,7 +2,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "4.14.0"
+      version = "~> 4.0"
     }
     github = {
       source  = "integrations/github"
@@ -115,6 +115,11 @@ data "azurerm_client_config" "current" {}
 resource "azurerm_resource_group" "apbs-backend" {
   name     = local.env_config.resource_group_name
   location = "East US"
+}
+
+resource "azurerm_resource_group" "apbs-function-backend" {
+  name     = "apbs-function-backend"
+  location = "East US 2"
 }
 
 module "backend_storage" {
