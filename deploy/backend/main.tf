@@ -177,38 +177,6 @@ resource "azurerm_storage_queue" "apbs-backend-queue" {
   storage_account_name = module.backend_storage.storage_account.name
 }
 
-resource "azurerm_user_assigned_identity" "apbs-backend-queue-access" {
-  name                = "apbs-backend-queue-access"
-  location            = azurerm_resource_group.apbs-backend.location
-  resource_group_name = azurerm_resource_group.apbs-backend.name
-}
-
-resource "azurerm_role_definition" "apbs-backend-data-access" {
-  name = local.env_config.backend_role_definition_name
-  # Restrict this to the queue
-  scope = module.backend_storage.storage_account.id
-  permissions {
-    actions = [
-      "Microsoft.Storage/storageAccounts/queueServices/queues/read",
-      "Microsoft.Storage/storageAccounts/blobServices/containers/read"
-    ]
-    not_actions = []
-    data_actions = [
-      // Queue message operations
-      "Microsoft.Storage/storageAccounts/queueServices/queues/messages/read",
-      "Microsoft.Storage/storageAccounts/queueServices/queues/messages/write",
-      "Microsoft.Storage/storageAccounts/queueServices/queues/messages/delete",
-      "Microsoft.Storage/storageAccounts/queueServices/queues/messages/process/action",
-
-      // Blob operations
-      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read",
-      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write",
-      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/add/action",
-      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/delete"
-    ]
-    not_data_actions = []
-  }
-}
 
 # The following is the identity used by the container app to access the storage account,
 # the queue, and the blob storage.
@@ -219,10 +187,17 @@ resource "azurerm_user_assigned_identity" "apbs-backend-data-access" {
 }
 
 resource "azurerm_role_assignment" "apbs-backend-data-access" {
-  scope              = sensitive(azurerm_storage_queue.apbs-backend-queue.resource_manager_id)
-  role_definition_id = sensitive(azurerm_role_definition.apbs-backend-data-access.role_definition_resource_id)
-  principal_id       = sensitive(azurerm_user_assigned_identity.apbs-backend-data-access.principal_id)
+  scope                = module.backend_storage.storage_account.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = sensitive(azurerm_user_assigned_identity.apbs-backend-data-access.principal_id)
 }
+
+resource "azurerm_role_assignment" "apbs-backend-queue-access" {
+  scope                = module.backend_storage.storage_account.id
+  role_definition_name = "Storage Queue Data Contributor"
+  principal_id         = sensitive(azurerm_user_assigned_identity.apbs-backend-data-access.principal_id)
+}
+
 
 module "container-app" {
   source                       = "../../modules/apbs-backend/container-app"
