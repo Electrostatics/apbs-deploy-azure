@@ -117,11 +117,6 @@ resource "azurerm_resource_group" "apbs-backend" {
   location = "East US"
 }
 
-resource "azurerm_resource_group" "apbs-function-backend" {
-  name     = "apbs-function-backend"
-  location = "East US 2"
-}
-
 module "backend_storage" {
   source                  = "../../modules/apbs-backend/storage-account"
   name                    = local.env_config.storage_account_name
@@ -230,3 +225,4 @@ resource "azurerm_role_assignment" "apbs-container-app-access" {
   role_definition_name = "Container Apps Jobs Operator"
   principal_id         = sensitive(azurerm_user_assigned_identity.apbs-container-app-access.principal_id)
 }
+

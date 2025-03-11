@@ -51,6 +51,9 @@ jobs:
           TF_VAR_acr_resource_group_name: ${{ secrets.ACR_RESOURCE_GROUP_NAME }}
           GH_TOKEN: ${{ secrets.TF_VAR_GITHUB_TOKEN }}
 
+      - name: Print version
+        run: tofu version
+
       - name: OpenTofu validate
         id: validate
         run: tofu validate -no-color
