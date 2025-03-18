@@ -21,11 +21,12 @@ import os
 import json
 import pathlib
 import base64
-# from boto3 import client, resource
-# from botocore.exceptions import ClientError, ParamValidationError
+import asyncio
+import contextlib
 
-from azure.storage.queue import QueueClient
-from azure.storage.blob import BlobServiceClient, ContainerClient
+
+from azure.storage.queue import QueueClient, QueueMessage
+from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 
@@ -235,6 +236,11 @@ class Queue:
             raise
 
     def mark_message_completed(self, message):
+        self.queue.delete_message(message)
+
+    def requeue_message(self, message):
+        content = message.content
+        self.queue.send_message(content)
         self.queue.delete_message(message)
 
     def set_visibility_timeout(self, message, timeout):
@@ -600,11 +606,52 @@ def cleanup_job(job_tag: str, rundir: str, settings: Settings) -> int:
     return 1
 
 
-def execute_command(
+async def read_stream(stream, is_stderr=False, output_file=None):
+    while True:
+        line = await stream.readline()
+        if not line:
+            break
+        line_str = line.decode("utf-8").rstrip("\n")
+
+        if is_stderr:
+            print(line_str, file=sys.stderr, flush=True)
+        else:
+            print(line_str, file=sys.stdout, flush=True)
+
+        if output_file:
+            output_file.write(line_str + "\n")
+            output_file.flush()
+
+
+async def monitor_termination(process, stop_event):
+    await stop_event.wait()
+    print("Terminating process", flush=True)
+    try:
+        process.terminate()
+        print("Sent SIGTERM, waiting for process to finish", flush=True)
+        try:
+            await asyncio.wait_for(process.wait(), timeout=5)
+            print("Process finished", flush=True)
+        except asyncio.TimeoutError:
+            print("Process did not finish in time, killing it", flush=True)
+            process.kill()
+            await process.wait()
+            print("Process killed", flush=True)
+    except ProcessLookupError:
+        print("Process already finished", flush=True)
+
+
+async def handle_signal(stop_event):
+    print("Received SIGTERM, stopping", flush=True)
+    stop_event.set()
+
+
+async def execute_command_async(
     job_tag: str,
     command_line_str: str,
     stdout_filename: str,
     stderr_filename: str,
+    stop_event: asyncio.Event,
 ) -> int:
     """Spawn a subprocess and collect all the information about it.
     Returns the exit code the of the executed command.
@@ -616,36 +663,43 @@ def execute_command(
         stderr_filename (str): The name of the output file for stderr.
     Return:
         exit_code (int): The exit code of the executed command
+
     """
     command_split = command_line_str.split()
-    stdout_text: str
-    stderr_text: str
-    exit_code: int
-    try:
-        proc = run(command_split, stdout=PIPE, stderr=PIPE, check=True)
-        stdout_text = proc.stdout.decode("utf-8")
-        stderr_text = proc.stderr.decode("utf-8")
-        exit_code = proc.returncode
-    except CalledProcessError as cpe:
-        _LOGGER.exception(
-            "%s failed to run command, %s: %s",
-            job_tag,
-            command_line_str,
-            cpe,
+    process = await asyncio.create_subprocess_exec(
+        *command_split,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    termination_task = asyncio.create_task(monitor_termination(process, stop_event))
+    with contextlib.ExitStack() as stack:
+        files = [
+            stack.enter_context(open(file, "w"))
+            for file in (stdout_filename, stderr_filename)
+        ]
+        stdout_task = asyncio.create_task(read_stream(process.stdout, False, files[0]))
+        stderr_task = asyncio.create_task(read_stream(process.stderr, True, files[1]))
+
+        done, pending = await asyncio.wait(
+            [stdout_task, stderr_task, termination_task],
+            return_when=asyncio.FIRST_COMPLETED,
         )
-        stdout_text = cpe.stdout.decode("utf-8")
-        stderr_text = cpe.stderr.decode("utf-8")
-        exit_code = cpe.returncode
 
-    # Write stdout to file
-    with open(stdout_filename, "w") as fout:
-        fout.write(stdout_text)
+        if termination_task in done:
+            print("Termination task requested, cancelling...", flush=True)
+            for task in pending:
+                task.cancel()
+            try:
+                await asyncio.gather(*pending, return_exceptions=True)
+            except asyncio.CancelledError:
+                pass
+            return 130
 
-    # Write stderr to file
-    with open(stderr_filename, "w") as fout:
-        fout.write(stderr_text)
+    code = await process.wait()
+    if code != 0:
+        _LOGGER.exception(f"{job_tag} failed to run command, {command_line_str}")
 
-    return exit_code
+    return code
 
 
 def get_job_info(
@@ -677,19 +731,27 @@ def get_job_info(
 
 # TODO: intendo - 2021/05/10 - Break run_job into multiple functions
 #                              to reduce complexity.
-def run_job(
-    job: str,
+async def run_job(
+    message: QueueMessage,
     output_storage: Storage,
     input_storage: Storage,
     metrics: JobMetrics,
     settings: Settings,
+    stop_event: asyncio.Event,
 ) -> int:
-    """Remove the directory for the job.
+    """Run the job described in the queue message.
 
-    :param job:  The job file describing what needs to be run.
-    :param s3client:  S3 input bucket with input files.
-    :return:  int
+    Args:
+        message (QueueMessage): The message from the queue.
+        output_storage (Storage): The storage for output files.
+        input_storage (Storage): The storage for input files.
+        metrics (JobMetrics): The metrics for the job.
+        settings (Settings): The settings for the job.
+        stop_event (asyncio.Event): The event to stop the job.
+    Return:
+        int: The exit code of the job.
     """
+    job = message.content
     ret_val = 1
     job_info = get_job_info(job)
     if not job_info:
@@ -784,14 +846,14 @@ def run_job(
     # Execute job binary with appropriate arguments and record metrics
     try:
         metrics.start_time = time()
-        metrics.exit_code = execute_command(
+        metrics.exit_code = await execute_command_async(
             job_tag,
             command,
             f"{job_type}.stdout.txt",
             f"{job_type}.stderr.txt",
+            stop_event,
         )
         metrics.end_time = time()
-
         # We need to create the {job_type}-metrics.json before we upload
         # the files to the S3_TOPLEVEL_BUCKET.
         metrics.write_metrics(job_tag, job_type, ".")
@@ -843,35 +905,25 @@ def run_job(
 
     # Cleanup job directory and update status
     cleanup_job(job_tag, rundir, settings)
-    update_status(
-        output_storage,
-        job_tag,
-        job_type,
-        JOBSTATUS.COMPLETE,
-        output_files,
-    )
+    if metrics.exit_code != 0:
+        update_status(
+            output_storage,
+            job_tag,
+            job_type,
+            JOBSTATUS.FAILED,
+            output_files,
+            "Job failed to run.",
+        )
+    else:
+        update_status(
+            output_storage,
+            job_tag,
+            job_type,
+            JOBSTATUS.COMPLETE,
+            output_files,
+        )
 
-    return ret_val
-
-
-# def build_parser():
-#     """Build argument parser.
-
-#     :return:  argument parser
-#     :rtype:  ArgumentParser
-#     """
-#     desc = "\n\tRun the APBS or PDB2PQR process"
-
-#     parser = ArgumentParser(
-#         description=desc,
-#         formatter_class=ArgumentDefaultsHelpFormatter,
-#     )
-#     parser.add_argument(
-#         "--verbose",
-#         action="store_true",
-#         help="Print out verbose output",
-#     )
-#     return parser
+    return metrics.exit_code
 
 
 def dry_run(jobinfo, inputs, outputs: Storage, metrics):
@@ -896,26 +948,35 @@ def dry_run(jobinfo, inputs, outputs: Storage, metrics):
     print(jobinfo)
 
 
-def main() -> None:
+async def main() -> int:
+    stop_event = asyncio.Event()
+    loop = asyncio.get_event_loop()
+    loop.add_signal_handler(
+        signal.SIGTERM, lambda: asyncio.create_task(handle_signal(stop_event))
+    )
     lasttime = datetime.now()
     queue = Queue.from_environment()
     inputs = Storage.from_environment("inputs")
     outputs = Storage.from_environment("outputs")
     settings = Settings()
     metrics = JobMetrics()
-
     while message := queue.get_message():
-        # jobinfo = queue.extract_jobinfo(message)
-        # TODO: set visibility timeout based on jobinfo
-        # dry_run(jobinfo, inputs, outputs, metrics)
-        run_job(message.content, outputs, inputs, metrics, settings)
+        code = await run_job(message, outputs, inputs, metrics, settings, stop_event)
+        # 130 is the exit code for a SIGTERM signal and we want to requeue the message
+        if code == 130:
+            _LOGGER.info("SIGTERM received, requeuing message")
+            queue.requeue_message(message)
+            _LOGGER.info("DONE: %s", str(datetime.now() - lasttime))
+            return 130
         queue.mark_message_completed(message)
         while not PROCESSING:
             sleep(10)
 
     _LOGGER.info("DONE: %s", str(datetime.now() - lasttime))
+    return 0
 
 
 if __name__ == "__main__":
     _LOGGER.setLevel(INFO)
-    main()
+    sys.exit(asyncio.run(main()))
+    # main()
