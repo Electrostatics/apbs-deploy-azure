@@ -905,6 +905,7 @@ async def run_job(
 
     # Cleanup job directory and update status
     cleanup_job(job_tag, rundir, settings)
+    _LOGGER.info(f"Job completed with exit code: {metrics.exit_code}")
     if metrics.exit_code != 0:
         update_status(
             output_storage,
