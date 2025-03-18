@@ -48,6 +48,7 @@ locals {
       cpu                          = 4.0
       memory                       = "8Gi"
       image_tag                    = "latest"
+      replica_timeout_in_seconds   = 1800
       github_info = {
         repository    = "apbs-web-testing-fork"
         branch        = "aws-release"
@@ -74,6 +75,7 @@ locals {
       cpu                          = 2.0
       memory                       = "4Gi"
       image_tag                    = "latest"
+      replica_timeout_in_seconds   = 600
       github_info = {
         repository    = "apbs-web-testing-fork"
         branch        = "aws-release"
@@ -210,6 +212,7 @@ module "container-app" {
   storage_account_url          = module.backend_storage.storage_account.primary_blob_endpoint
   execution_role_id            = sensitive(azurerm_user_assigned_identity.apbs-backend-data-access.id)
   execution_role_client_id     = sensitive(azurerm_user_assigned_identity.apbs-backend-data-access.client_id)
+  replica_timeout_in_seconds   = local.env_config.replica_timeout_in_seconds
 }
 
 # These are currently being used by the static web app but we are not managing
