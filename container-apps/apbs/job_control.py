@@ -693,11 +693,17 @@ async def execute_command_async(
                 await asyncio.gather(*pending, return_exceptions=True)
             except asyncio.CancelledError:
                 pass
-            return 130
+            return 143
 
     code = await process.wait()
+    # Handle signal termination
+    if code < 0:
+        # Convert negative signal code to conventional exit code (128 + signal number)
+        signal_number = -code  # Make the negative code positive
+        code = 128 + signal_number
+
     if code != 0:
-        _LOGGER.exception(f"{job_tag} failed to run command, {command_line_str}")
+        _LOGGER.error(f"{job_tag} failed to run command, {command_line_str}")
 
     return code
 
@@ -963,12 +969,12 @@ async def main() -> int:
     metrics = JobMetrics()
     while message := queue.get_message():
         code = await run_job(message, outputs, inputs, metrics, settings, stop_event)
-        # 130 is the exit code for a SIGTERM signal and we want to requeue the message
-        if code == 130:
+        # 143 is the exit code for a SIGTERM signal and we want to requeue the message
+        if code == 143:
             _LOGGER.info("SIGTERM received, requeuing message")
             queue.requeue_message(message)
             _LOGGER.info("DONE: %s", str(datetime.now() - lasttime))
-            return 130
+            return 143
         queue.mark_message_completed(message)
         while not PROCESSING:
             sleep(10)
