@@ -967,20 +967,21 @@ async def main() -> int:
     outputs = Storage.from_environment("outputs")
     settings = Settings()
     metrics = JobMetrics()
+    return_code = 0
     while message := queue.get_message():
         code = await run_job(message, outputs, inputs, metrics, settings, stop_event)
-        # 143 is the exit code for a SIGTERM signal and we want to requeue the message
-        if code == 143:
-            _LOGGER.info("SIGTERM received, requeuing message")
-            queue.requeue_message(message)
-            _LOGGER.info("DONE: %s", str(datetime.now() - lasttime))
-            return 143
         queue.mark_message_completed(message)
+        # 143 is the exit code for a SIGTERM signal, which means the job was interrupted
+        # and we will not request the message since it can gunk up the queue.
+        if code == 143:
+            _LOGGER.info("DONE: %s", str(datetime.now() - lasttime))
+            return_code = code
+            break
         while not PROCESSING:
             sleep(10)
 
     _LOGGER.info("DONE: %s", str(datetime.now() - lasttime))
-    return 0
+    return return_code
 
 
 if __name__ == "__main__":
