@@ -61,6 +61,7 @@ module "registry" {
   location            = azurerm_resource_group.apbs-registry.location
   registry_name       = local.registry_name
   resource_group_name = azurerm_resource_group.apbs-registry.name
+  container_name      = "apbs-azure"
 }
 
 resource "github_actions_secret" "acr_url" {
