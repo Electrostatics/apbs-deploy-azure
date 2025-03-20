@@ -88,6 +88,7 @@ class Storage:
         # self.container_name = container_client.container_name
         self.blob_service_client = blob_service_client
         self.container_client = blob_service_client.get_container_client(container_name)
+        self.container_name = container_name
 
     @staticmethod
     def _kwargs_from_env(container_name: str):
