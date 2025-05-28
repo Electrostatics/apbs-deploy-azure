@@ -19,7 +19,7 @@ terraform {
 }
 
 provider "github" {
-  owner = "omsf-eco-infra"
+  owner = "Electrostatics"
 }
 
 provider "azurerm" {
