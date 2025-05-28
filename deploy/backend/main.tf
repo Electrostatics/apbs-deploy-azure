@@ -12,7 +12,7 @@ terraform {
 
   backend "azurerm" {
     resource_group_name  = "tf"
-    storage_account_name = "apbsterraform"
+    storage_account_name = "apbsterraformdeploy"
     container_name       = "tfstate"
     key                  = "terraform.tfstate"
   }
@@ -228,4 +228,3 @@ resource "azurerm_role_assignment" "apbs-container-app-access" {
   role_definition_name = "Container Apps Jobs Operator"
   principal_id         = sensitive(azurerm_user_assigned_identity.apbs-container-app-access.principal_id)
 }
-
