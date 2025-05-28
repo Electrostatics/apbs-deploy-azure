@@ -20,6 +20,10 @@ This repo holds OpenTofu modules for deploying pdb2pqr and apbs on Azure.
   └── registry -> Azure Container Registry module
 ```
 
+## Prerequisites
+To get started, you will need to setup a storage backend to hold the state of this project. This should be done first.
+To do this, follow the instructions found [here](https://learn.microsoft.com/en-us/azure/developer/terraform/store-state-in-azure-storage?tabs=azure-cli). Since storage accounts are globally unique, you will also need to update the backend configuration in both the `backend` and `registry` modules.
+
 ## Deployment
 This repo utilizes OpenTofu for deployment.
 Additionally, we are using [OpenTofu Workspaces](https://opentofu.org/docs/language/state/workspaces/) to manage multiple deployments.
