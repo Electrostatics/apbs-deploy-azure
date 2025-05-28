@@ -41,5 +41,25 @@ Stage 2: Deploy the backend
 cd deploy/backend
 tofu init
 tofu workspace select <default/dev>
-tofu plan tofu apply
+tofu plan
+tofu apply
 ```
+
+## Deleting the project
+
+Stage 1: Remove both backends
+```sh
+cd deploy/backend
+tofu workspace select <default/dev>
+tofu destroy
+```
+
+Stage 2: Remove the registry
+```sh
+cd deploy/registry
+tofu destroy
+```
+
+Stage 3: Remove your storage backend from Azure
+
+
