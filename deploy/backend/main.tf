@@ -19,7 +19,7 @@ terraform {
 }
 
 provider "github" {
-  owner = "omsf-eco-infra"
+  owner = "Electrostatics"
 }
 
 provider "azurerm" {
@@ -50,7 +50,7 @@ locals {
       image_tag                    = "latest"
       replica_timeout_in_seconds   = 1800
       github_info = {
-        repository    = "apbs-web-testing-fork"
+        repository    = "apbs-web"
         branch        = "aws-release"
         secret_prefix = "AZURE"
       }
@@ -77,7 +77,7 @@ locals {
       image_tag                    = "latest"
       replica_timeout_in_seconds   = 600
       github_info = {
-        repository    = "apbs-web-testing-fork"
+        repository    = "apbs-web"
         branch        = "aws-release"
         secret_prefix = "AZURE_DEV"
       }
