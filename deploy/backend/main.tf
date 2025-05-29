@@ -43,7 +43,7 @@ locals {
     default = {
       resource_group_name          = "apbs-backend"
       app_name                     = "apbs-app"
-      storage_account_name         = "apbsblobs"
+      storage_account_name         = "apbsblobsdeploy"
       backend_role_definition_name = "APBS Backend Data Access"
       cpu                          = 4.0
       memory                       = "8Gi"
@@ -70,7 +70,7 @@ locals {
     dev = {
       resource_group_name          = "apbs-backend-dev"
       app_name                     = "apbs-app-dev"
-      storage_account_name         = "apbsblobsdev"
+      storage_account_name         = "apbsblobsdevdeploy"
       backend_role_definition_name = "APBS Backend Data Access Dev"
       cpu                          = 2.0
       memory                       = "4Gi"
