@@ -970,8 +970,29 @@ async def main() -> int:
     metrics = JobMetrics()
     return_code = 0
     while message := queue.get_message():
-        code = await run_job(message, outputs, inputs, metrics, settings, stop_event)
-        queue.mark_message_completed(message)
+        code = 0
+        if message.dequeue_count is not None and message.dequeue_count > 20:
+            _LOGGER.info(
+                "Job has repeatedly failed and needs to be removed from queue."
+            )
+            job = message.content
+            job_info = get_job_info(job)
+            job_type = job_info["job_type"]
+            job_tag = f"{job_info['job_date']}/{job_info['job_id']}"
+            update_status(
+                outputs,
+                job_tag,
+                job_type,
+                JOBSTATUS.FAILED,
+                [],
+                "Job failed too many times.",
+            )
+            queue.mark_message_completed(message)
+        else:
+            code = await run_job(
+                message, outputs, inputs, metrics, settings, stop_event
+            )
+            queue.mark_message_completed(message)
         # 143 is the exit code for a SIGTERM signal, which means the job was interrupted
         # and we will not request the message since it can gunk up the queue.
         if code == 143:
