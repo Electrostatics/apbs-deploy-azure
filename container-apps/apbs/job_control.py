@@ -971,7 +971,7 @@ async def main() -> int:
     return_code = 0
     while message := queue.get_message():
         code = 0
-        if message.dequeue_count is not None and message.dequeue_count > 20:
+        if message.dequeue_count is not None and message.dequeue_count > 5:
             _LOGGER.info(
                 "Job has repeatedly failed and needs to be removed from queue."
             )
