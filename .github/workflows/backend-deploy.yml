@@ -10,6 +10,9 @@ on:
 
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   determine-workspace:
     runs-on: ubuntu-latest
